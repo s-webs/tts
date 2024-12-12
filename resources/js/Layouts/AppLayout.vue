@@ -52,6 +52,10 @@ const logout = () => {
                                 <NavLink :href="route('dashboard')" :active="route().current('dashboard')">
                                     Трекинг
                                 </NavLink>
+                                <NavLink v-if="$page.props.auth.user.role === 'admin'" :href="route('reports.index')"
+                                         :active="route().current('reports.index')">
+                                    Отчеты
+                                </NavLink>
                                 <NavLink v-if="$page.props.auth.user.role === 'admin'" :href="route('users.index')"
                                          :active="route().current('users.index')">
                                     Сотрудники
@@ -172,6 +176,10 @@ const logout = () => {
                     <div class="pt-2 pb-3 space-y-1">
                         <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">
                             Тайм-трекинг
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink v-if="$page.props.auth.user.role === 'admin'" :href="route('reports.index')"
+                                           :active="route().current('reports.index')">
+                            Отчеты
                         </ResponsiveNavLink>
                         <ResponsiveNavLink v-if="$page.props.auth.user.role === 'admin'" :href="route('users.index')"
                                            :active="route().current('users.index')">

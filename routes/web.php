@@ -26,6 +26,8 @@ Route::middleware([
         Route::post('/users', [\App\Http\Controllers\UserController::class, 'store'])->name('users.store'); // Добавление нового пользователя
         Route::put('/users/{user}', [\App\Http\Controllers\UserController::class, 'update'])->name('users.update'); // Обновление пользователя
         Route::delete('/users/{user}', [\App\Http\Controllers\UserController::class, 'destroy'])->name('users.destroy'); // Удаление пользователя
+
+        Route::get('/reports', [\App\Http\Controllers\AdminController::class, 'reports'])->name('reports.index');
     });
 
 });
