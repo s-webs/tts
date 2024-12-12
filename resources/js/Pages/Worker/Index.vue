@@ -83,6 +83,7 @@ const startPause = async () => {
         const response = await axios.post('/api/time-entries/start-pause');
         success.value = response.data.message;
         await fetchDaySummary(); // Обновляем данные
+        await fetchData()
     } catch (error) {
         handleError(error);
     }
@@ -152,9 +153,6 @@ const endPause = async () => {
 const fetchData = async () => {
     try {
         const response = await axios.get('/time-entries');
-        // Предполагается, что вы обновите текущий рабочий день и историю рабочих дней
-        // Здесь можно использовать reactive свойства или другие подходы для обновления данных
-        // Например:
         window.location.reload(); // Простое обновление страницы
     } catch (error) {
         console.error('Ошибка при загрузке данных:', error);
