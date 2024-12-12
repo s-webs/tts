@@ -171,7 +171,11 @@ const logout = () => {
                      class="sm:hidden">
                     <div class="pt-2 pb-3 space-y-1">
                         <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">
-                            Dashboard
+                            Тайм-трекинг
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink v-if="$page.props.auth.user.role === 'admin'" :href="route('users.index')"
+                                           :active="route().current('users.index')">
+                            Сотрудники
                         </ResponsiveNavLink>
                     </div>
 
