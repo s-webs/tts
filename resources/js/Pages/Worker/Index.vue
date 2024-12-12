@@ -263,7 +263,7 @@ const fetchData = async () => {
                           class="text-yellow-500">Вы на перерыве. {{ formatDuration(activePauseDuration) }}</span>
                     <span v-else class="text-red-500">Рабочий день завершен.</span>
                 </div>
-                <div class="mt-4 lg:mt-0">
+                <div>
                     <ActionButtons
                         :currentWorkDay="currentWorkDay"
                         :currentPause="currentPause"

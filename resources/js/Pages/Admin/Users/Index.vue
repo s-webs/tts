@@ -71,6 +71,40 @@ const deleteUser = async () => {
         alert('Ошибка при удалении пользователя');
     }
 };
+
+// Добавление нового сотрудника
+const isAddModalOpen = ref(false);
+const newUser = ref({
+    name: '',
+    email: '',
+    role: 'worker',
+    password: '', // Поле для пароля
+});
+
+const openAddModal = () => {
+    isAddModalOpen.value = true;
+};
+
+const closeAddModal = () => {
+    isAddModalOpen.value = false;
+    newUser.value = {
+        name: '',
+        email: '',
+        role: 'worker',
+    };
+};
+
+const addUser = async () => {
+    try {
+        await axios.post('/users', newUser.value); // Отправляем все поля, включая пароль
+        alert('Пользователь успешно добавлен');
+        closeAddModal();
+        location.reload(); // Обновляем страницу (можно оптимизировать)
+    } catch (error) {
+        console.error(error);
+        alert('Ошибка при добавлении пользователя');
+    }
+};
 </script>
 
 
@@ -82,12 +116,12 @@ const deleteUser = async () => {
             </h1>
         </template>
 
-        <div class="container mx-auto">
+        <div class="container mx-auto p-4">
             <div class="bg-white mt-6 p-4 rounded-lg shadow-[rgba(50,50,93,0.25)_0px_6px_12px_-2px,_rgba(0,0,0,0.3)_0px_3px_7px_-3px]">
                 <div class="flex items-center justify-between">
                     <div>Общее количество сотрудников: {{ filteredUsers.length }}</div>
                     <div>
-                        <button class="px-2 py-1 bg-green-500 hover:bg-green-700 text-gray-100 rounded-md">
+                        <button @click="openAddModal" class="px-2 py-1 bg-green-500 hover:bg-green-700 text-gray-100 rounded-md">
                             Добавить
                         </button>
                     </div>
@@ -169,6 +203,39 @@ const deleteUser = async () => {
                     </button>
                     <button @click="deleteUser" class="px-4 py-2 bg-red-500 hover:bg-red-700 text-white rounded-md">
                         Удалить
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Модальное окно добавления -->
+        <div v-if="isAddModalOpen" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+            <div class="bg-white p-6 rounded-lg">
+                <h2 class="text-xl mb-4">Добавление нового сотрудника</h2>
+                <label class="block mb-2">
+                    Имя:
+                    <input v-model="newUser.name" type="text" class="w-full p-2 border rounded"/>
+                </label>
+                <label class="block mb-2">
+                    Email:
+                    <input v-model="newUser.email" type="email" class="w-full p-2 border rounded"/>
+                </label>
+                <label class="block mb-2">
+                    Пароль:
+                    <input v-model="newUser.password" type="password" class="w-full p-2 border rounded"/>
+                </label>
+                <label class="block mb-4">
+                    Роль:
+                    <select v-model="newUser.role" class="w-full p-2 border rounded">
+                        <option value="admin">Администратор</option>
+                        <option value="worker">Работник</option>
+                    </select>
+                </label>
+                <div class="flex justify-end gap-2">
+                    <button @click="closeAddModal" class="px-4 py-2 bg-gray-500 hover:bg-gray-700 text-white rounded-md">
+                        Отмена
+                    </button>
+                    <button @click="addUser" class="px-4 py-2 bg-green-500 hover:bg-green-700 text-white rounded-md">
+                        Добавить
                     </button>
                 </div>
             </div>

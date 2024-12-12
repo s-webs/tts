@@ -11,7 +11,7 @@ const emits = defineEmits(['onStartWork', 'onStartPause', 'onEndPause', 'onEndWo
     <button
         v-if="!currentWorkDay"
         @click="$emit('onStartWork')"
-        class="bg-green-500 hover:bg-green-700 px-2 py-1 rounded mr-2"
+        class="bg-green-500 hover:bg-green-700 px-2 py-1 rounded mt-4 lg:mt-0"
     >
         Начать рабочий день
     </button>
@@ -32,7 +32,7 @@ const emits = defineEmits(['onStartWork', 'onStartPause', 'onEndPause', 'onEndWo
     <button
         v-if="currentWorkDay && !currentPause && !currentWorkDay.end_time"
         @click="$emit('onEndWork')"
-        class="bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded"
+        class="bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded mt-4 lg:mt-0"
     >
         Закончить рабочий день
     </button>

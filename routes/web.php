@@ -23,6 +23,7 @@ Route::middleware([
 
     Route::middleware(['role:admin'])->group(function () {
         Route::get('/users', [\App\Http\Controllers\UserController::class, 'index'])->name('users.index');
+        Route::post('/users', [\App\Http\Controllers\UserController::class, 'store'])->name('users.store'); // Добавление нового пользователя
         Route::put('/users/{user}', [\App\Http\Controllers\UserController::class, 'update'])->name('users.update'); // Обновление пользователя
         Route::delete('/users/{user}', [\App\Http\Controllers\UserController::class, 'destroy'])->name('users.destroy'); // Удаление пользователя
     });

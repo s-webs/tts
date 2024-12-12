@@ -15,6 +15,25 @@ class UserController extends Controller
         return Inertia::render('Admin/Users/Index', compact('users'));
     }
 
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users',
+            'role' => 'required|in:admin,worker',
+            'password' => 'required|min:6', // Валидация пароля
+        ]);
+
+        User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'role' => $request->role,
+            'password' => bcrypt($request->password), // Хэшируем пароль
+        ]);
+
+        return response()->json(['message' => 'Пользователь успешно добавлен.']);
+    }
+
     public function update(Request $request, User $user)
     {
         $request->validate([
