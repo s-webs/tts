@@ -1,8 +1,9 @@
 <script setup>
 import axios from 'axios'; // Импорт Axios
-import {ref, computed, watch, onUnmounted, handleError} from 'vue';
-import {usePage} from "@inertiajs/vue3";
+import {ref, computed, watch, onUnmounted, handleError, onMounted} from 'vue';
 import AppLayout from "@/Layouts/AppLayout.vue";
+import ActionButtons from "@/Pages/Worker/components/ActionButtons.vue";
+import {formatTimestamp, formatDate, formatDuration} from './utils';
 
 const props = defineProps({
     currentWorkDay: Object,
@@ -10,6 +11,8 @@ const props = defineProps({
 })
 
 const daySummary = ref([]);
+const elapsedTime = ref(0); // Время, прошедшее с начала рабочего дня (в секундах)
+let timerInterval = null;
 
 const fetchDaySummary = async () => {
     try {
@@ -29,31 +32,47 @@ const currentPause = computed(() => {
     return props.currentWorkDay.pauses.find((p) => !p.end_time) || null;
 });
 
-// Форматирование даты и времени
-const formatTimestamp = (timestamp) => {
-    if (!timestamp) return '-';
-    return new Date(timestamp).toLocaleString();
-};
-
-const formatDate = (timestamp) => {
-    if (!timestamp) return '-';
-    return new Date(timestamp).toLocaleDateString();
-};
-
 // Обработка сообщений об ошибках и успехах
 const errors = ref([]);
 const success = ref('');
 
+const getLocation = async () => {
+    return new Promise((resolve, reject) => {
+        if (!('geolocation' in navigator)) {
+            reject('Ваше устройство не поддерживает геолокацию.');
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                resolve({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                });
+            },
+            (error) => {
+                reject('Не удалось получить ваше местоположение. Проверьте настройки устройства.');
+            }
+        );
+    });
+};
+
 // Функции для действий
 const startWork = async () => {
     try {
-        const response = await axios.post('/api/time-entries/start-work');
+        const location = await getLocation(); // Получаем местоположение
+        const response = await axios.post('/api/time-entries/start-work', {
+            latitude: location.latitude,
+            longitude: location.longitude,
+        });
+
         success.value = response.data.message;
         errors.value = [];
-        // Обновление данных после успешного действия
         await fetchData();
     } catch (error) {
-        if (error.response && error.response.data && error.response.data.message) {
+        if (typeof error === 'string') {
+            errors.value = [error]; // Ошибка получения местоположения
+        } else if (error.response?.data?.message) {
             errors.value = [error.response.data.message];
         } else {
             errors.value = ['Произошла ошибка. Попробуйте снова.'];
@@ -61,15 +80,68 @@ const startWork = async () => {
         success.value = '';
     }
 };
+
+const startElapsedTimeTimer = () => {
+    if (props.currentWorkDay?.start_time) {
+        const startTime = new Date(props.currentWorkDay.start_time).getTime();
+        timerInterval = setInterval(() => {
+            const now = Date.now();
+            elapsedTime.value = Math.floor((now - startTime) / 1000);
+        }, 1000);
+    }
+};
+
+// Остановка таймера
+const stopElapsedTimeTimer = () => {
+    clearInterval(timerInterval);
+    elapsedTime.value = 0;
+};
+
+// Форматированное отображение времени
+const formattedElapsedTime = computed(() => {
+    const hours = Math.floor(elapsedTime.value / 3600);
+    const minutes = Math.floor((elapsedTime.value % 3600) / 60);
+    const seconds = elapsedTime.value % 60;
+    return [hours, minutes, seconds].map((val) => String(val).padStart(2, '0')).join(':');
+});
+
+// Вызов функции для расчета прошедшего времени
+watch(() => props.currentWorkDay, (newWorkDay) => {
+    if (newWorkDay?.start_time) {
+        startElapsedTimeTimer();
+    } else {
+        stopElapsedTimeTimer();
+    }
+});
+
+// Функции жизненного цикла
+onMounted(() => {
+    if (props.currentWorkDay?.start_time) {
+        startElapsedTimeTimer();
+    }
+});
+
+onUnmounted(() => {
+    stopElapsedTimeTimer();
+});
+
 
 const endWork = async () => {
     try {
-        const response = await axios.post('/api/time-entries/end-work');
-        success.value = response.data.message;
+        const location = await getLocation(); // Получаем местоположение
+        const response = await axios.post('/api/time-entries/end-work', {
+            latitude: location.latitude,
+            longitude: location.longitude,
+        });
+
+        success.value = response.data.message || 'Рабочий день успешно завершен!';
         errors.value = [];
-        await fetchData();
+        await fetchDaySummary(); // Обновляем сводку дня
+        await fetchData(); // Обновляем данные рабочего дня
     } catch (error) {
-        if (error.response && error.response.data && error.response.data.message) {
+        if (typeof error === 'string') {
+            errors.value = [error]; // Ошибка получения местоположения
+        } else if (error.response?.data?.message) {
             errors.value = [error.response.data.message];
         } else {
             errors.value = ['Произошла ошибка. Попробуйте снова.'];
@@ -78,16 +150,30 @@ const endWork = async () => {
     }
 };
 
+
 const startPause = async () => {
     try {
-        const response = await axios.post('/api/time-entries/start-pause');
+        const location = await getLocation(); // Получаем местоположение
+        const response = await axios.post('/api/time-entries/start-pause', {
+            latitude: location.latitude,
+            longitude: location.longitude,
+        });
+
         success.value = response.data.message;
-        await fetchDaySummary(); // Обновляем данные
-        await fetchData()
+        await fetchDaySummary();
+        await fetchData();
     } catch (error) {
-        handleError(error);
+        if (typeof error === 'string') {
+            errors.value = [error];
+        } else if (error.response?.data?.message) {
+            errors.value = [error.response.data.message];
+        } else {
+            errors.value = ['Произошла ошибка. Попробуйте снова.'];
+        }
+        success.value = '';
     }
 };
+
 
 const activePauseDuration = ref(0); // Хранит продолжительность текущего перерыва в секундах
 let intervalId = null; // ID интервала для очистки позже
@@ -106,16 +192,6 @@ const stopPauseTimer = () => {
     activePauseDuration.value = 0;
 };
 
-// Форматирование времени
-const formatDuration = (seconds) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return [hours, minutes, secs]
-        .map((val) => String(val).padStart(2, '0'))
-        .join(':');
-};
-
 // Следим за состоянием активного перерыва
 watch(
     () => currentPause.value,
@@ -126,7 +202,7 @@ watch(
             stopPauseTimer();
         }
     },
-    { immediate: true }
+    {immediate: true}
 );
 
 onUnmounted(() => {
@@ -135,12 +211,20 @@ onUnmounted(() => {
 
 const endPause = async () => {
     try {
-        const response = await axios.post('/api/time-entries/end-pause');
-        success.value = response.data.message;
+        const location = await getLocation(); // Получаем местоположение
+        const response = await axios.post('/api/time-entries/end-pause', {
+            latitude: location.latitude,
+            longitude: location.longitude,
+        });
+
+        success.value = response.data.message || 'Перерыв успешно завершен!';
         errors.value = [];
-        fetchData();
+        await fetchDaySummary(); // Обновляем сводку дня
+        await fetchData(); // Обновляем данные рабочего дня
     } catch (error) {
-        if (error.response && error.response.data && error.response.data.message) {
+        if (typeof error === 'string') {
+            errors.value = [error]; // Ошибка получения местоположения
+        } else if (error.response?.data?.message) {
             errors.value = [error.response.data.message];
         } else {
             errors.value = ['Произошла ошибка. Попробуйте снова.'];
@@ -148,6 +232,7 @@ const endPause = async () => {
         success.value = '';
     }
 };
+
 
 // Функция для получения обновленных данных
 const fetchData = async () => {
@@ -162,47 +247,30 @@ const fetchData = async () => {
 
 <template>
     <AppLayout>
+        <template #header>
+            <h1 class="font-semibold text-xl text-gray-800 leading-tight text-center">
+                Тайм-трекинг
+            </h1>
+        </template>
         <div class="container mx-auto p-4">
-            <h1 class="text-2xl mb-4">Тайм-трекинг</h1>
-
-            <!-- Отображение текущего статуса -->
-            <div class="mb-4">
-                <span v-if="!currentWorkDay" class="text-gray-500">Вы еще не начали рабочий день.</span>
-                <span v-else-if="currentWorkDay.end_time === null && !currentPause" class="text-green-500">Рабочий день начат.</span>
-                <span v-else-if="currentPause" class="text-yellow-500">Вы на перерыве. {{ formatDuration(activePauseDuration) }}</span>
-                <span v-else class="text-red-500">Рабочий день завершен.</span>
-            </div>
-
-            <!-- Кнопки действий -->
-            <div class="mb-6">
-                <button
-                    v-if="!currentWorkDay"
-                    @click="startWork"
-                    class="bg-green-500 px-4 py-2 rounded mr-2"
-                >
-                    Начать рабочий день
-                </button>
-                <button
-                    v-else-if="currentWorkDay.end_time === null && !currentPause"
-                    @click="startPause"
-                    class="bg-yellow-500 text-white px-4 py-2 rounded mr-2"
-                >
-                    Начать перерыв
-                </button>
-                <button
-                    v-else-if="currentPause"
-                    @click="endPause"
-                    class="bg-blue-500 text-white px-4 py-2 rounded mr-2"
-                >
-                    Закончить перерыв
-                </button>
-                <button
-                    v-if="currentWorkDay && !currentPause"
-                    @click="endWork"
-                    class="bg-red-500 text-white px-4 py-2 rounded"
-                >
-                    Закончить рабочий день
-                </button>
+            <div
+                class="flex flex-col lg:flex-row justify-between items-center p-4 rounded-lg shadow-[rgba(50,50,93,0.25)_0px_6px_12px_-2px,_rgba(0,0,0,0.3)_0px_3px_7px_-3px] bg-white">
+                <div class="">
+                    <span v-if="!currentWorkDay" class="text-gray-500">Вы еще не начали рабочий день.</span>
+                    <span v-else-if="currentWorkDay.end_time === null && !currentPause"
+                          class="font-bold text-4xl">{{ formattedElapsedTime }}</span>
+                    <span v-else-if="currentPause"
+                          class="text-yellow-500">Вы на перерыве. {{ formatDuration(activePauseDuration) }}</span>
+                    <span v-else class="text-red-500">Рабочий день завершен.</span>
+                </div>
+                <div class="mt-4 lg:mt-0">
+                    <ActionButtons
+                        :currentWorkDay="currentWorkDay"
+                        :currentPause="currentPause"
+                        @onStartWork="startWork"
+                        @onEndWork="endWork"
+                    />
+                </div>
             </div>
 
             <!-- Сообщения об ошибках и успехах -->
@@ -216,23 +284,24 @@ const fetchData = async () => {
                 {{ success }}
             </div>
 
-            <div class="mt-6">
-                <h2 class="text-xl mb-2">Сводка за день</h2>
-                <div class="overflow-x-auto">
+            <div
+                class="mt-6 p-2 rounded-lg shadow-[rgba(50,50,93,0.25)_0px_6px_12px_-2px,_rgba(0,0,0,0.3)_0px_3px_7px_-3px] bg-white">
+                <h2 class="text-xl text-center py-2">Сводка за день</h2>
+                <div class="overflow-x-auto mt-4">
                     <table class="min-w-full bg-white border border-gray-200">
                         <thead>
                         <tr class="bg-gray-100">
                             <th class="py-2 px-4 text-left text-sm font-medium text-gray-600">Тип действия</th>
                             <th class="py-2 px-4 text-left text-sm font-medium text-gray-600">Время</th>
-                            <th class="py-2 px-4 text-left text-sm font-medium text-gray-600">Продолжительность</th>
+                            <!--                            <th class="py-2 px-4 text-left text-sm font-medium text-gray-600">Продолжительность</th>-->
                         </tr>
                         </thead>
                         <tbody>
                         <tr v-for="action in daySummary" :key="action.time" class="border-t">
                             <td class="py-2 px-4 text-sm text-gray-800">{{ action.type }}</td>
                             <td class="py-2 px-4 text-sm text-gray-800">{{ formatTimestamp(action.time) }}</td>
-                            <td class="py-2 px-4 text-sm text-gray-800" v-if="action.duration">{{ action.duration }}</td>
-                            <td class="py-2 px-4 text-sm text-gray-800" v-else>-</td>
+                            <!--                            <td class="py-2 px-4 text-sm text-gray-800" v-if="action.duration">{{action.duration}}</td>-->
+                            <!--                            <td class="py-2 px-4 text-sm text-gray-800" v-else>-</td>-->
                         </tr>
                         </tbody>
                     </table>

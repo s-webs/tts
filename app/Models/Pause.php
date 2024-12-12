@@ -10,6 +10,10 @@ class Pause extends Model
         'work_day_id',
         'start_time',
         'end_time',
+        'latitude_start',
+        'longitude_start',
+        'latitude_end',
+        'longitude_end',
     ];
 
     protected $casts = [

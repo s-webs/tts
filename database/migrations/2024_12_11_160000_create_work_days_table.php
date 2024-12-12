@@ -16,6 +16,10 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->timestamp('start_time')->nullable();
             $table->timestamp('end_time')->nullable();
+            $table->decimal('latitude_start', 10, 7)->nullable();
+            $table->decimal('longitude_start', 10, 7)->nullable();
+            $table->decimal('latitude_end', 10, 7)->nullable();
+            $table->decimal('longitude_end', 10, 7)->nullable();
             $table->timestamps();
         });
     }

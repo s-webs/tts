@@ -29,6 +29,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
     ];
 
     /**
@@ -67,6 +68,16 @@ class User extends Authenticatable
     public function workDays(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(WorkDay::class);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isWorker(): bool
+    {
+        return $this->role === 'worker';
     }
 
 }

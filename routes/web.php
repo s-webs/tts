@@ -21,4 +21,10 @@ Route::middleware([
     Route::post('/api/time-entries/end-pause', [\App\Http\Controllers\WorkDayController::class, 'endPause'])->name('time-entries.endPause');
     Route::get('/api/time-entries/day-summary', [\App\Http\Controllers\WorkDayController::class, 'getDaySummary']);
 
+    Route::middleware(['role:admin'])->group(function () {
+        Route::get('/users', [\App\Http\Controllers\UserController::class, 'index'])->name('users.index');
+        Route::put('/users/{user}', [\App\Http\Controllers\UserController::class, 'update'])->name('users.update'); // Обновление пользователя
+        Route::delete('/users/{user}', [\App\Http\Controllers\UserController::class, 'destroy'])->name('users.destroy'); // Удаление пользователя
+    });
+
 });

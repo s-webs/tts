@@ -30,11 +30,15 @@ class WorkDayController extends Controller
     /**
      * Начать рабочий день
      */
-    public function startWork()
+    public function startWork(Request $request)
     {
         $user = Auth::user();
 
-        // Проверка, существует ли рабочий день, начатый сегодня
+        $request->validate([
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
+
         $today = now()->startOfDay();
         $activeWorkDay = $user->workDays()
             ->where('start_time', '>=', $today)
@@ -44,10 +48,11 @@ class WorkDayController extends Controller
             return response()->json(['message' => 'Вы уже начали рабочий день сегодня.'], 400);
         }
 
-        // Создание нового рабочего дня
         $newWorkDay = WorkDay::create([
             'user_id' => $user->id,
             'start_time' => now(),
+            'latitude_start' => $request->latitude,
+            'longitude_start' => $request->longitude,
         ]);
 
         return response()->json([
@@ -57,12 +62,18 @@ class WorkDayController extends Controller
     }
 
 
+
     /**
      * Закончить рабочий день
      */
-    public function endWork()
+    public function endWork(Request $request)
     {
         $user = Auth::user();
+
+        $request->validate([
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
 
         $activeWorkDay = $user->workDays()->whereNull('end_time')->first();
 
@@ -70,27 +81,33 @@ class WorkDayController extends Controller
             return response()->json(['message' => 'Вы не начали рабочий день.'], 400);
         }
 
-        // Проверка, не находитесь ли вы на перерыве
         $activePause = $activeWorkDay->pauses()->whereNull('end_time')->first();
 
         if ($activePause) {
             return response()->json(['message' => 'Закончите текущий перерыв перед завершением рабочего дня.'], 400);
         }
 
-        // Завершение рабочего дня
         $activeWorkDay->update([
             'end_time' => now(),
+            'latitude_end' => $request->latitude,
+            'longitude_end' => $request->longitude,
         ]);
 
-        return response()->json(['message' => 'Рабочий день завершен.'], 200);
+        return response()->json(['message' => 'Рабочий день завершен.', 'workDay' => $activeWorkDay]);
     }
+
 
     /**
      * Начать перерыв
      */
-    public function startPause()
+    public function startPause(Request $request)
     {
         $user = Auth::user();
+
+        $request->validate([
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
 
         $activeWorkDay = $user->workDays()->whereNull('end_time')->first();
 
@@ -98,28 +115,34 @@ class WorkDayController extends Controller
             return response()->json(['message' => 'Вы не начали рабочий день.'], 400);
         }
 
-        // Проверка, не начат ли уже перерыв
         $activePause = $activeWorkDay->pauses()->whereNull('end_time')->first();
 
         if ($activePause) {
             return response()->json(['message' => 'Вы уже находитесь на перерыве.'], 400);
         }
 
-        // Начало нового перерыва
-        Pause::create([
+        $pause = Pause::create([
             'work_day_id' => $activeWorkDay->id,
             'start_time' => now(),
+            'latitude_start' => $request->latitude,
+            'longitude_start' => $request->longitude,
         ]);
 
-        return response()->json(['message' => 'Перерыв начат.'], 200);
+        return response()->json(['message' => 'Перерыв начат.', 'pause' => $pause]);
     }
+
 
     /**
      * Закончить перерыв
      */
-    public function endPause()
+    public function endPause(Request $request)
     {
         $user = Auth::user();
+
+        $request->validate([
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+        ]);
 
         $activeWorkDay = $user->workDays()->whereNull('end_time')->first();
 
@@ -133,13 +156,15 @@ class WorkDayController extends Controller
             return response()->json(['message' => 'Вы не находитесь на перерыве.'], 400);
         }
 
-        // Завершение перерыва
         $activePause->update([
             'end_time' => now(),
+            'latitude_end' => $request->latitude,
+            'longitude_end' => $request->longitude,
         ]);
 
-        return response()->json(['message' => 'Перерыв завершен.'], 200);
+        return response()->json(['message' => 'Перерыв завершен.', 'pause' => $activePause]);
     }
+
 
     public function getDaySummary()
     {

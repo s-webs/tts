@@ -12,6 +12,10 @@ class WorkDay extends Model
         'user_id',
         'start_time',
         'end_time',
+        'latitude_start',
+        'longitude_start',
+        'latitude_end',
+        'longitude_end',
     ];
 
     protected $casts = [
