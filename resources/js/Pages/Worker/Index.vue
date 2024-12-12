@@ -1,6 +1,6 @@
 <script setup>
 import axios from 'axios'; // Импорт Axios
-import {ref, computed} from 'vue';
+import {ref, computed, watch, onUnmounted, handleError} from 'vue';
 import {usePage} from "@inertiajs/vue3";
 import AppLayout from "@/Layouts/AppLayout.vue";
 
@@ -9,10 +9,24 @@ const props = defineProps({
     workDays: Array
 })
 
+const daySummary = ref([]);
+
+const fetchDaySummary = async () => {
+    try {
+        const response = await axios.get('/api/time-entries/day-summary');
+        daySummary.value = response.data.actions;
+    } catch (error) {
+        console.error('Ошибка при загрузке сводки:', error);
+    }
+};
+
+// Вызов функции при загрузке компонента
+fetchDaySummary();
+
 // Определяем, есть ли активный перерыв
 const currentPause = computed(() => {
     if (!props.currentWorkDay) return null;
-    return props.currentWorkDay.pauses.find(p => !p.end_time) || null;
+    return props.currentWorkDay.pauses.find((p) => !p.end_time) || null;
 });
 
 // Форматирование даты и времени
@@ -37,7 +51,7 @@ const startWork = async () => {
         success.value = response.data.message;
         errors.value = [];
         // Обновление данных после успешного действия
-        fetchData();
+        await fetchData();
     } catch (error) {
         if (error.response && error.response.data && error.response.data.message) {
             errors.value = [error.response.data.message];
@@ -53,7 +67,7 @@ const endWork = async () => {
         const response = await axios.post('/api/time-entries/end-work');
         success.value = response.data.message;
         errors.value = [];
-        fetchData();
+        await fetchData();
     } catch (error) {
         if (error.response && error.response.data && error.response.data.message) {
             errors.value = [error.response.data.message];
@@ -68,17 +82,55 @@ const startPause = async () => {
     try {
         const response = await axios.post('/api/time-entries/start-pause');
         success.value = response.data.message;
-        errors.value = [];
-        fetchData();
+        await fetchDaySummary(); // Обновляем данные
     } catch (error) {
-        if (error.response && error.response.data && error.response.data.message) {
-            errors.value = [error.response.data.message];
-        } else {
-            errors.value = ['Произошла ошибка. Попробуйте снова.'];
-        }
-        success.value = '';
+        handleError(error);
     }
 };
+
+const activePauseDuration = ref(0); // Хранит продолжительность текущего перерыва в секундах
+let intervalId = null; // ID интервала для очистки позже
+
+const startPauseTimer = (pauseStartTime) => {
+    clearInterval(intervalId); // Убедитесь, что предыдущий таймер остановлен
+    intervalId = setInterval(() => {
+        const now = new Date();
+        const startTime = new Date(pauseStartTime);
+        activePauseDuration.value = Math.floor((now - startTime) / 1000); // Вычисляем разницу в секундах
+    }, 1000);
+};
+
+const stopPauseTimer = () => {
+    clearInterval(intervalId);
+    activePauseDuration.value = 0;
+};
+
+// Форматирование времени
+const formatDuration = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return [hours, minutes, secs]
+        .map((val) => String(val).padStart(2, '0'))
+        .join(':');
+};
+
+// Следим за состоянием активного перерыва
+watch(
+    () => currentPause.value,
+    (pause) => {
+        if (pause) {
+            startPauseTimer(pause.start_time);
+        } else {
+            stopPauseTimer();
+        }
+    },
+    { immediate: true }
+);
+
+onUnmounted(() => {
+    stopPauseTimer(); // Останавливаем таймер при размонтировании компонента
+});
 
 const endPause = async () => {
     try {
@@ -119,7 +171,7 @@ const fetchData = async () => {
             <div class="mb-4">
                 <span v-if="!currentWorkDay" class="text-gray-500">Вы еще не начали рабочий день.</span>
                 <span v-else-if="currentWorkDay.end_time === null && !currentPause" class="text-green-500">Рабочий день начат.</span>
-                <span v-else-if="currentPause" class="text-yellow-500">Вы на перерыве.</span>
+                <span v-else-if="currentPause" class="text-yellow-500">Вы на перерыве. {{ formatDuration(activePauseDuration) }}</span>
                 <span v-else class="text-red-500">Рабочий день завершен.</span>
             </div>
 
@@ -166,64 +218,24 @@ const fetchData = async () => {
                 {{ success }}
             </div>
 
-            <!-- Сводка времени -->
-            <div class="mb-6">
-                <h2 class="text-xl mb-2">Сводка за день</h2>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full bg-white border border-gray-200">
-                        <thead>
-                        <tr class="bg-gray-100">
-                            <th class="py-2 px-4 text-left text-sm font-medium text-gray-600">Дата</th>
-                            <th class="py-2 px-4 text-left text-sm font-medium text-gray-600 text-end">Время перерывов</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr v-for="workDay in workDays" :key="workDay.id" class="border-t">
-                            <td class="py-2 px-4 text-sm text-gray-800">{{ formatDate(workDay.start_time) }}</td>
-                            <td class="py-2 px-4 text-sm text-gray-800 text-end">{{ workDay.total_pause_time }}</td>
-                        </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-            </div>
-
-            <!-- История действий -->
             <div class="mt-6">
-                <h2 class="text-xl mb-2">История действий</h2>
+                <h2 class="text-xl mb-2">Сводка за день</h2>
                 <div class="overflow-x-auto">
                     <table class="min-w-full bg-white border border-gray-200">
                         <thead>
                         <tr class="bg-gray-100">
                             <th class="py-2 px-4 text-left text-sm font-medium text-gray-600">Тип действия</th>
                             <th class="py-2 px-4 text-left text-sm font-medium text-gray-600">Время</th>
+                            <th class="py-2 px-4 text-left text-sm font-medium text-gray-600">Продолжительность</th>
                         </tr>
                         </thead>
                         <tbody>
-                        <template v-for="workDay in workDays" :key="workDay.id">
-                            <!-- Рабочий день -->
-                            <tr class="border-t bg-gray-50">
-                                <td colspan="2" class="py-2 px-4 font-semibold text-gray-700">
-                                    Рабочий день: {{ formatTimestamp(workDay.start_time) }}
-                                </td>
-                            </tr>
-                            <!-- Перерывы -->
-                            <tr v-for="pause in workDay.pauses" :key="pause.id" class="border-t">
-                                <td class="py-2 px-4 pl-6 text-sm capitalize text-gray-800">
-                                    {{ pause.end_time ? 'Конец перерыва' : 'Начало перерыва' }}
-                                </td>
-                                <td class="py-2 px-4 text-sm text-gray-800">
-                                    {{ formatTimestamp(pause.end_time || pause.start_time) }}
-                                </td>
-                            </tr>
-                            <!-- Завершение рабочего дня -->
-                            <tr v-if="workDay.end_time" class="border-t">
-                                <td class="py-2 px-4 pl-6 text-sm capitalize text-gray-800">Завершение рабочего дня</td>
-                                <td class="py-2 px-4 text-sm text-gray-800">
-                                    {{ formatTimestamp(workDay.end_time) }}
-                                </td>
-                            </tr>
-                        </template>
+                        <tr v-for="action in daySummary" :key="action.time" class="border-t">
+                            <td class="py-2 px-4 text-sm text-gray-800">{{ action.type }}</td>
+                            <td class="py-2 px-4 text-sm text-gray-800">{{ formatTimestamp(action.time) }}</td>
+                            <td class="py-2 px-4 text-sm text-gray-800" v-if="action.duration">{{ action.duration }}</td>
+                            <td class="py-2 px-4 text-sm text-gray-800" v-else>-</td>
+                        </tr>
                         </tbody>
                     </table>
                 </div>

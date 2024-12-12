@@ -14,29 +14,18 @@ class WorkDayController extends Controller
     {
         $user = Auth::user();
 
-        // Получение текущего рабочего дня или создание нового
+        // Получить текущий рабочий день
+        $today = now()->startOfDay();
         $currentWorkDay = $user->workDays()
-            ->whereNull('end_time')
+            ->where('start_time', '>=', $today)
             ->with('pauses')
             ->first();
 
-        // Получение истории рабочих дней
-        $workDays = $user->workDays()
-            ->with('pauses')
-            ->orderBy('start_time', 'desc')
-            ->get()
-            ->map(function ($workDay) {
-                return [
-                    'id' => $workDay->id,
-                    'start_time' => $workDay->start_time,
-                    'end_time' => $workDay->end_time,
-                    'total_work_time' => $workDay->total_work_time,
-                    'total_pause_time' => $workDay->total_pause_time,
-                ];
-            });
-
-        return Inertia::render('Worker/Index', compact('workDays', 'currentWorkDay'));
+        return Inertia::render('Worker/Index', [
+            'currentWorkDay' => $currentWorkDay,
+        ]);
     }
+
 
     /**
      * Начать рабочий день
@@ -45,21 +34,28 @@ class WorkDayController extends Controller
     {
         $user = Auth::user();
 
-        // Проверка, не начат ли уже рабочий день
-        $activeWorkDay = $user->workDays()->whereNull('end_time')->first();
+        // Проверка, существует ли рабочий день, начатый сегодня
+        $today = now()->startOfDay();
+        $activeWorkDay = $user->workDays()
+            ->where('start_time', '>=', $today)
+            ->first();
 
         if ($activeWorkDay) {
-            return response()->json(['message' => 'Вы уже начали рабочий день.'], 400);
+            return response()->json(['message' => 'Вы уже начали рабочий день сегодня.'], 400);
         }
 
         // Создание нового рабочего дня
-        WorkDay::create([
+        $newWorkDay = WorkDay::create([
             'user_id' => $user->id,
             'start_time' => now(),
         ]);
 
-        return response()->json(['message' => 'Рабочий день начат.'], 200);
+        return response()->json([
+            'message' => 'Рабочий день начат.',
+            'workDay' => $newWorkDay,
+        ]);
     }
+
 
     /**
      * Закончить рабочий день
@@ -144,4 +140,64 @@ class WorkDayController extends Controller
 
         return response()->json(['message' => 'Перерыв завершен.'], 200);
     }
+
+    public function getDaySummary()
+    {
+        $user = Auth::user();
+        $today = now()->startOfDay();
+
+        // Получаем текущий рабочий день
+        $workDay = $user->workDays()
+            ->where('start_time', '>=', $today)
+            ->with('pauses')
+            ->first();
+
+        if (!$workDay) {
+            return response()->json([
+                'message' => 'Нет данных за текущий день.',
+                'actions' => []
+            ]);
+        }
+
+        // Формируем список действий
+        $actions = [];
+
+        // Добавляем начало рабочего дня
+        $actions[] = [
+            'type' => 'Начало рабочего дня',
+            'time' => $workDay->start_time,
+        ];
+
+        // Добавляем перерывы с их продолжительностью
+        foreach ($workDay->pauses as $pause) {
+            $actions[] = [
+                'type' => 'Начало перерыва',
+                'time' => $pause->start_time,
+            ];
+            if ($pause->end_time) {
+                $actions[] = [
+                    'type' => 'Конец перерыва',
+                    'time' => $pause->end_time,
+                    'duration' => gmdate('H:i:s', $pause->start_time->diffInSeconds($pause->end_time)), // Возвращаем отформатированное время
+                ];
+            }
+        }
+
+        // Добавляем окончание рабочего дня
+        if ($workDay->end_time) {
+            $actions[] = [
+                'type' => 'Окончание рабочего дня',
+                'time' => $workDay->end_time,
+            ];
+        }
+
+        // Сортируем действия по времени
+        usort($actions, fn($a, $b) => strtotime($a['time']) <=> strtotime($b['time']));
+
+        return response()->json([
+            'message' => 'Сводка за день.',
+            'actions' => $actions,
+        ]);
+    }
+
 }

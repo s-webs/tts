@@ -19,4 +19,6 @@ Route::middleware([
     Route::post('/api/time-entries/end-work', [\App\Http\Controllers\WorkDayController::class, 'endWork'])->name('time-entries.endWork');
     Route::post('/api/time-entries/start-pause', [\App\Http\Controllers\WorkDayController::class, 'startPause'])->name('time-entries.startPause');
     Route::post('/api/time-entries/end-pause', [\App\Http\Controllers\WorkDayController::class, 'endPause'])->name('time-entries.endPause');
+    Route::get('/api/time-entries/day-summary', [\App\Http\Controllers\WorkDayController::class, 'getDaySummary']);
+
 });
