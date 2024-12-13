@@ -1,5 +1,7 @@
 export const formatTimestamp = (timestamp) => {
-    if (!timestamp) return '-';
+    if (!timestamp || isNaN(new Date(timestamp).getTime())) {
+        return '-';
+    }
     return new Date(timestamp).toLocaleString();
 };
 

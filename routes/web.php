@@ -28,6 +28,11 @@ Route::middleware([
         Route::delete('/users/{user}', [\App\Http\Controllers\UserController::class, 'destroy'])->name('users.destroy'); // Удаление пользователя
 
         Route::get('/reports', [\App\Http\Controllers\AdminController::class, 'reports'])->name('reports.index');
+        Route::get('/api/reports', [\App\Http\Controllers\AdminController::class, 'getReports'])->name('reports.getReports');
+        Route::get('/api/reports/employee', [\App\Http\Controllers\AdminController::class, 'getEmployeeReport']);
+        Route::get('/api/users', [\App\Http\Controllers\AdminController::class, 'getAllUsers']);
+
+
     });
 
 });

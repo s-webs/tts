@@ -1,8 +1,10 @@
 <script setup>
 import QrcodeVue from 'qrcode.vue'
+import {Head} from "@inertiajs/vue3";
 </script>
 
 <template>
+    <Head title="TTS"/>
     <div
         class="h-screen w-screen overflow-hidden bg-gradient-to-r from-cyan-500 to-blue-500 flex flex-col items-center justify-center p-8">
         <div>

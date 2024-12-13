@@ -246,7 +246,7 @@ const fetchData = async () => {
 </script>
 
 <template>
-    <AppLayout>
+    <AppLayout title="Трекинг">
         <template #header>
             <h1 class="font-semibold text-xl text-gray-800 leading-tight text-center">
                 Тайм-трекинг

@@ -20,6 +20,7 @@
         "vue": "^3.3.13"
     },
     "dependencies": {
+        "html2pdf.js": "^0.10.2",
         "qrcode.vue": "^3.6.0"
     }
 }
