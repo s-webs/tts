@@ -3,15 +3,18 @@ import AppLayout from "@/Layouts/AppLayout.vue";
 import {ref} from "vue";
 import {formatTimestamp, formatDate, formatDuration} from '../../../Pages/Worker/utils.js';
 import html2pdf from 'html2pdf.js';
+import {useI18n} from "vue-i18n";
+
+const {t, locale} = useI18n();
 
 const props = defineProps({
     usersToday: Array,
 })
 
 const tabs = [
-    {id: 1, label: "Сегодня", component: "todayReports"},
-    {id: 2, label: "Диапазон", component: "weeklyReports"},
-    {id: 3, label: "Сотрудник", component: "workerReports"},
+    {id: 1, label: 'today', component: "todayReports"},
+    {id: 2, label: 'range', component: "weeklyReports"},
+    {id: 3, label: 'employee', component: "workerReports"},
 ];
 
 const getCurrentDate = () => {
@@ -163,7 +166,7 @@ fetchUsers();
     <AppLayout title="Отчеты">
         <template #header>
             <h1 class="font-semibold text-xl text-gray-800 leading-tight text-center">
-                Отчеты
+                {{ t('main.reports') }}
             </h1>
         </template>
 
@@ -183,7 +186,7 @@ fetchUsers();
                     ]"
                         @click="activeTab = tab.id"
                     >
-                        <span class="text-lg">{{ tab.label }}</span>
+                        <span class="text-lg">{{ t('main.' + tab.label) }}</span>
                     </div>
                 </div>
             </div>
@@ -202,7 +205,7 @@ fetchUsers();
                                 </div>
                             </div>
                             <div class="text-end mt-8">
-                                Дата: {{ currentDate }}
+                                {{ t('main.date') }}: {{ currentDate }}
                             </div>
                         </div>
                         <div class="overflow-x-auto mt-4">
@@ -210,9 +213,9 @@ fetchUsers();
                                 <thead>
                                 <tr class="border border-black text-center">
                                     <th class="border-r border-black pb-2">№</th>
-                                    <th class="border-r border-black pb-2">Сотрудник</th>
-                                    <th class="border-r border-black pb-2">Начало рабочего дня</th>
-                                    <th class="pb-1">Окончание рабочего дня</th>
+                                    <th class="border-r border-black pb-2">{{ t('main.employee') }}</th>
+                                    <th class="border-r border-black pb-2">{{ t('main.theBeginningWorkingDay') }}</th>
+                                    <th class="pb-1">{{ t('main.endOfWorkingDay') }}</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -233,7 +236,7 @@ fetchUsers();
                                             target="_blank"
                                             class="bg-blue-500 text-white px-2 py-1 rounded-md text-xs"
                                         >
-                                            Местоположение
+                                            {{ t('main.location') }}
                                         </a>
                                     </td>
                                     <td class="text-center pb-2">
@@ -247,7 +250,7 @@ fetchUsers();
                                             target="_blank"
                                             class="bg-blue-500 text-white px-2 py-1 rounded-md text-xs"
                                         >
-                                            Местоположение
+                                            {{ t('main.location') }}
                                         </a>
                                     </td>
                                 </tr>
@@ -256,7 +259,7 @@ fetchUsers();
                         </div>
                     </div>
                     <button @click="generatePdf" class="mt-4 px-4 py-2 bg-green-600 text-white rounded">
-                        Скачать PDF
+                        {{ t('main.downloadPdf') }}
                     </button>
                 </div>
 
@@ -272,7 +275,8 @@ fetchUsers();
                         <!-- Диапазон выбора дат -->
                         <div v-if="!isPdf" class="flex flex-wrap gap-4 mb-6 mt-6">
                             <div class="flex flex-col">
-                                <label for="start-date" class="text-sm font-semibold text-gray-700">Дата начала:</label>
+                                <label for="start-date"
+                                       class="text-sm font-semibold text-gray-700">{{ t('main.startDate') }}:</label>
                                 <input
                                     id="start-date"
                                     type="date"
@@ -281,8 +285,9 @@ fetchUsers();
                                 />
                             </div>
                             <div class="flex flex-col">
-                                <label for="end-date" class="text-sm font-semibold text-gray-700">Дата
-                                    окончания:</label>
+                                <label for="end-date" class="text-sm font-semibold text-gray-700">{{
+                                        t('main.endDate')
+                                    }}:</label>
                                 <input
                                     id="end-date"
                                     type="date"
@@ -294,21 +299,24 @@ fetchUsers();
                                 @click="fetchWeeklyReports"
                                 class="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-white rounded-md self-end"
                             >
-                                Показать отчёты
+                                {{ t('main.showReports') }}
                             </button>
                         </div>
 
                         <!-- Отображение таблиц по датам -->
                         <div v-if="weeklyReports.length > 0" class="mt-4">
                             <div v-for="(report, dateIndex) in weeklyReports" :key="dateIndex" class="mb-6">
-                                <h2 class="text-lg font-bold mb-2">Дата: {{ report.date }}</h2>
+                                <h2 class="text-lg font-bold mb-2">{{ t('main.date') }}: {{ report.date }}</h2>
                                 <table class="table table-xs border w-full">
                                     <thead>
                                     <tr class="border border-black text-center">
                                         <th class="border-r border-black pb-2">№</th>
-                                        <th class="border-r border-black pb-2">Сотрудник</th>
-                                        <th class="border-r border-black pb-2">Начало рабочего дня</th>
-                                        <th class="pb-2">Окончание рабочего дня</th>
+                                        <th class="border-r border-black pb-2">{{ t('main.employee') }}</th>
+                                        <th class="border-r border-black pb-2">{{
+                                                t('main.theBeginningWorkingDay')
+                                            }}
+                                        </th>
+                                        <th class="pb-2">{{ t('main.endOfWorkingDay') }}</th>
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -330,7 +338,7 @@ fetchUsers();
                                                 target="_blank"
                                                 class="bg-blue-500 text-white px-2 py-1 rounded-md text-xs"
                                             >
-                                                Местоположение
+                                                {{ t('main.location') }}
                                             </a>
                                         </td>
                                         <td class="pb-2 text-center">
@@ -344,7 +352,7 @@ fetchUsers();
                                                 target="_blank"
                                                 class="bg-blue-500 text-white px-2 py-1 rounded-md text-xs"
                                             >
-                                                Местоположение
+                                                {{ t('main.location') }}
                                             </a>
                                         </td>
                                     </tr>
@@ -355,11 +363,11 @@ fetchUsers();
                         </div>
 
                         <div v-else class="text-center text-gray-500">
-                            Отчёты за выбранный диапазон дат не найдены.
+                            {{ t('main.reportsForSelected') }}
                         </div>
                     </div>
                     <button @click="generatePdfRange" class="mt-4 px-4 py-2 bg-green-600 text-white rounded">
-                        Скачать PDF
+                        {{ t('main.downloadPdf') }}
                     </button>
                 </div>
 
@@ -375,13 +383,15 @@ fetchUsers();
                         <!-- Выбор сотрудника -->
                         <div v-if="!isPdf" class="flex flex-wrap gap-4 mb-6 mt-6">
                             <div class="flex flex-col w-full">
-                                <label for="employee" class="text-sm font-semibold text-gray-700">Сотрудник:</label>
+                                <label for="employee" class="text-sm font-semibold text-gray-700">{{
+                                        t('main.employee')
+                                    }}:</label>
                                 <select
                                     id="employee"
                                     v-model="selectedEmployee"
                                     class="px-3 py-2 border rounded-md focus:outline-none focus:ring focus:border-blue-300"
                                 >
-                                    <option disabled value="">Выберите сотрудника</option>
+                                    <option disabled value="">{{ t('main.selectEmployee') }}</option>
                                     <option v-for="user in allUsers" :key="user.id" :value="user.id">{{
                                             user.name
                                         }}
@@ -393,8 +403,8 @@ fetchUsers();
                         <!-- Выбор диапазона дат -->
                         <div v-if="!isPdf" class="flex flex-wrap gap-4">
                             <div class="flex flex-col">
-                                <label for="start-date-employee" class="text-sm font-semibold text-gray-700">Дата
-                                    начала:</label>
+                                <label for="start-date-employee"
+                                       class="text-sm font-semibold text-gray-700">{{ t('main.startDate') }}:</label>
                                 <input
                                     id="start-date-employee"
                                     type="date"
@@ -403,8 +413,8 @@ fetchUsers();
                                 />
                             </div>
                             <div class="flex flex-col">
-                                <label for="end-date-employee" class="text-sm font-semibold text-gray-700">Дата
-                                    окончания:</label>
+                                <label for="end-date-employee"
+                                       class="text-sm font-semibold text-gray-700">{{ t('main.endDate') }}:</label>
                                 <input
                                     id="end-date-employee"
                                     type="date"
@@ -416,23 +426,23 @@ fetchUsers();
                                 @click="fetchEmployeeReport"
                                 class="px-4 py-2 bg-blue-500 hover:bg-blue-700 text-white rounded-md self-end"
                             >
-                                Показать отчет
+                                {{ t('main.showReport') }}
                             </button>
                         </div>
 
                         <!-- Отображение отчета -->
                         <div v-if="isLoading" class="text-center text-gray-500 mt-8">
-                            Загрузка...
+                            {{ t('main.loading') }}...
                         </div>
                         <div v-else-if="employeeReport.length > 0" class="overflow-x-auto mt-8">
                             <table class="table table-xs border w-full">
                                 <thead>
                                 <tr class="border border-black text-center">
-                                    <th class="border-r border-black pb-2">Сотрудник</th>
-                                    <th class="border-r border-black pb-2">Дата</th>
-                                    <th class="border-r border-black pb-2">Начало рабочего дня</th>
-                                    <th class="border-r border-black pb-2">Окончание рабочего дня</th>
-                                    <th class="pb-2">Рабочее время</th>
+                                    <th class="border-r border-black pb-2">{{ t('main.employee') }}</th>
+                                    <th class="border-r border-black pb-2">{{ t('main.date') }}</th>
+                                    <th class="border-r border-black pb-2">{{ t('main.theBeginningWorkingDay') }}</th>
+                                    <th class="border-r border-black pb-2">{{ t('main.endOfWorkingDay') }}</th>
+                                    <th class="pb-2">{{ t('main.workingHours') }}</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -441,7 +451,6 @@ fetchUsers();
                                     :key="index"
                                     class="border border-black text-center"
                                 >
-                                    {{ console.log(day) }}
                                     <td class="border-r border-black pb-2">{{ day.name }}</td>
                                     <td class="border-r border-black pb-2">{{ day.date }}</td>
                                     <td class="border-r border-black pb-2">
@@ -455,7 +464,7 @@ fetchUsers();
                                             target="_blank"
                                             class="bg-blue-500 text-white px-2 py-1 rounded-md text-xs"
                                         >
-                                            Местоположение
+                                            {{ t('main.location') }}
                                         </a>
                                     </td>
                                     <td class="border-r border-black pb-2">
@@ -469,7 +478,7 @@ fetchUsers();
                                             target="_blank"
                                             class="bg-blue-500 text-white px-2 py-1 rounded-md text-xs"
                                         >
-                                            Местоположение
+                                            {{ t('main.location') }}
                                         </a>
                                     </td>
                                     <td class="pb-2">
@@ -480,11 +489,11 @@ fetchUsers();
                             </table>
                         </div>
                         <div v-else class="text-center text-gray-500">
-                            Отчеты за выбранный диапазон дат не найдены.
+                            {{ t('main.reportsSelectedNotFound') }}
                         </div>
                     </div>
                     <button @click="generatePdfEmployee" class="mt-4 px-4 py-2 bg-green-600 text-white rounded">
-                        Скачать PDF
+                        {{ t('main.downloadPdf') }}
                     </button>
                 </div>
             </div>
@@ -495,6 +504,6 @@ fetchUsers();
 
 <style scoped>
 .page-break {
-    page-break-before: always; /* Разрыв страницы перед элементом */
+    page-break-before: always;
 }
 </style>

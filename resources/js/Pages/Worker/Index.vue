@@ -4,6 +4,9 @@ import {ref, computed, watch, onUnmounted, handleError, onMounted} from 'vue';
 import AppLayout from "@/Layouts/AppLayout.vue";
 import ActionButtons from "@/Pages/Worker/components/ActionButtons.vue";
 import {formatTimestamp, formatDate, formatDuration} from './utils';
+import {useI18n} from "vue-i18n";
+
+const {t, locale} = useI18n();
 
 const props = defineProps({
     currentWorkDay: Object,
@@ -39,7 +42,7 @@ const success = ref('');
 const getLocation = async () => {
     return new Promise((resolve, reject) => {
         if (!('geolocation' in navigator)) {
-            reject('Ваше устройство не поддерживает геолокацию.');
+            reject(t('main.notSupportGeolocation'));
             return;
         }
 
@@ -51,7 +54,7 @@ const getLocation = async () => {
                 });
             },
             (error) => {
-                reject('Не удалось получить ваше местоположение. Проверьте настройки устройства.');
+                reject(t('main.errorGetYourLocation'));
             }
         );
     });
@@ -66,16 +69,16 @@ const startWork = async () => {
             longitude: location.longitude,
         });
 
-        success.value = response.data.message;
+        success.value = t('main.' + response.data.message);
         errors.value = [];
         await fetchData();
     } catch (error) {
         if (typeof error === 'string') {
             errors.value = [error]; // Ошибка получения местоположения
         } else if (error.response?.data?.message) {
-            errors.value = [error.response.data.message];
+            errors.value = [t('main.' + error.response.data.message)];
         } else {
-            errors.value = ['Произошла ошибка. Попробуйте снова.'];
+            errors.value = [t('main.errorTryAgain')];
         }
         success.value = '';
     }
@@ -134,17 +137,17 @@ const endWork = async () => {
             longitude: location.longitude,
         });
 
-        success.value = response.data.message || 'Рабочий день успешно завершен!';
+        success.value = t('main.' + response.data.message) || t('main.workingSuccessfullyCompleted');
         errors.value = [];
         await fetchDaySummary(); // Обновляем сводку дня
         await fetchData(); // Обновляем данные рабочего дня
     } catch (error) {
         if (typeof error === 'string') {
             errors.value = [error]; // Ошибка получения местоположения
-        } else if (error.response?.data?.message) {
-            errors.value = [error.response.data.message];
+        } else if (t('main.' + error.response?.data?.message)) {
+            errors.value = [t('main.' + error.response.data.message)];
         } else {
-            errors.value = ['Произошла ошибка. Попробуйте снова.'];
+            errors.value = [t('main.errorTryAgain')];
         }
         success.value = '';
     }
@@ -166,9 +169,9 @@ const startPause = async () => {
         if (typeof error === 'string') {
             errors.value = [error];
         } else if (error.response?.data?.message) {
-            errors.value = [error.response.data.message];
+            errors.value = [t('main.' + error.response.data.message)];
         } else {
-            errors.value = ['Произошла ошибка. Попробуйте снова.'];
+            errors.value = [t('main.errorTryAgain')];
         }
         success.value = '';
     }
@@ -217,7 +220,7 @@ const endPause = async () => {
             longitude: location.longitude,
         });
 
-        success.value = response.data.message || 'Перерыв успешно завершен!';
+        success.value = response.data.message || t('main.breakCompletedSuccessfully');
         errors.value = [];
         await fetchDaySummary(); // Обновляем сводку дня
         await fetchData(); // Обновляем данные рабочего дня
@@ -225,9 +228,9 @@ const endPause = async () => {
         if (typeof error === 'string') {
             errors.value = [error]; // Ошибка получения местоположения
         } else if (error.response?.data?.message) {
-            errors.value = [error.response.data.message];
+            errors.value = [t('main.' + error.response.data.message)];
         } else {
-            errors.value = ['Произошла ошибка. Попробуйте снова.'];
+            errors.value = [t('main.errorTryAgain')];
         }
         success.value = '';
     }
@@ -249,19 +252,21 @@ const fetchData = async () => {
     <AppLayout title="Трекинг">
         <template #header>
             <h1 class="font-semibold text-xl text-gray-800 leading-tight text-center">
-                Тайм-трекинг
+                {{ t('main.timeTracking') }}
             </h1>
         </template>
         <div class="container mx-auto p-4">
             <div
                 class="flex flex-col lg:flex-row justify-between items-center p-4 rounded-lg shadow-[rgba(50,50,93,0.25)_0px_6px_12px_-2px,_rgba(0,0,0,0.3)_0px_3px_7px_-3px] bg-white">
                 <div class="">
-                    <span v-if="!currentWorkDay" class="text-gray-500">Вы еще не начали рабочий день.</span>
+                    <span v-if="!currentWorkDay" class="text-gray-500">{{ t('main.dontStartedWork') }}.</span>
                     <span v-else-if="currentWorkDay.end_time === null && !currentPause"
                           class="font-bold text-4xl">{{ formattedElapsedTime }}</span>
                     <span v-else-if="currentPause"
-                          class="text-yellow-500">Вы на перерыве. {{ formatDuration(activePauseDuration) }}</span>
-                    <span v-else class="text-red-500">Рабочий день завершен.</span>
+                          class="text-yellow-500">{{ t('main.youOnABreak') }}. {{
+                            formatDuration(activePauseDuration)
+                        }}</span>
+                    <span v-else class="text-red-500">{{ t('main.workingDayOver') }}.</span>
                 </div>
                 <div>
                     <ActionButtons
@@ -286,19 +291,22 @@ const fetchData = async () => {
 
             <div
                 class="mt-6 p-2 rounded-lg shadow-[rgba(50,50,93,0.25)_0px_6px_12px_-2px,_rgba(0,0,0,0.3)_0px_3px_7px_-3px] bg-white">
-                <h2 class="text-xl text-center py-2">Сводка за день</h2>
+                <h2 class="text-xl text-center py-2">{{ t('main.daySummary') }}</h2>
                 <div class="overflow-x-auto mt-4">
                     <table class="min-w-full bg-white border border-gray-200">
                         <thead>
                         <tr class="bg-gray-100">
-                            <th class="py-2 px-4 text-left text-sm font-medium text-gray-600">Тип действия</th>
-                            <th class="py-2 px-4 text-left text-sm font-medium text-gray-600">Время</th>
+                            <th class="py-2 px-4 text-left text-sm font-medium text-gray-600">{{
+                                    t('main.typeAction')
+                                }}
+                            </th>
+                            <th class="py-2 px-4 text-left text-sm font-medium text-gray-600">{{ t('main.time') }}</th>
                             <!--                            <th class="py-2 px-4 text-left text-sm font-medium text-gray-600">Продолжительность</th>-->
                         </tr>
                         </thead>
                         <tbody>
                         <tr v-for="action in daySummary" :key="action.time" class="border-t">
-                            <td class="py-2 px-4 text-sm text-gray-800">{{ action.type }}</td>
+                            <td class="py-2 px-4 text-sm text-gray-800">{{ t('main.' + action.type) }}</td>
                             <td class="py-2 px-4 text-sm text-gray-800">{{ formatTimestamp(action.time) }}</td>
                             <!--                            <td class="py-2 px-4 text-sm text-gray-800" v-if="action.duration">{{action.duration}}</td>-->
                             <!--                            <td class="py-2 px-4 text-sm text-gray-800" v-else>-</td>-->

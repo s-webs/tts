@@ -1,5 +1,5 @@
 <script setup>
-import {ref} from 'vue';
+import {computed, ref} from 'vue';
 import {Head, Link, router} from '@inertiajs/vue3';
 import ApplicationMark from '@/Components/ApplicationMark.vue';
 import Banner from '@/Components/Banner.vue';
@@ -8,6 +8,9 @@ import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
 import {usage} from "browserslist";
+import {useI18n} from "vue-i18n";
+
+const {t, locale} = useI18n();
 
 defineProps({
     title: String,
@@ -15,13 +18,21 @@ defineProps({
 
 const showingNavigationDropdown = ref(false);
 
-const switchToTeam = (team) => {
-    router.put(route('current-team.update'), {
-        team_id: team.id,
-    }, {
-        preserveState: false,
-    });
+const languages = {
+    kz: 'KZ',
+    ru: 'RU'
 };
+const currentLanguage = computed(() => locale.value);
+
+const changeLanguage = (lang) => {
+    console.log(lang)
+    locale.value = lang;
+    localStorage.setItem('language', lang);
+};
+
+if (localStorage.getItem('language')) {
+    locale.value = localStorage.getItem('language');
+}
 
 const logout = () => {
     router.post(route('logout'));
@@ -50,17 +61,27 @@ const logout = () => {
                             <!-- Navigation Links -->
                             <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                                 <NavLink :href="route('dashboard')" :active="route().current('dashboard')">
-                                    Трекинг
+                                    {{ t('main.tracking') }}
                                 </NavLink>
                                 <NavLink v-if="$page.props.auth.user.role === 'admin'" :href="route('reports.index')"
                                          :active="route().current('reports.index')">
-                                    Отчеты
+                                    {{ t('main.reports') }}
                                 </NavLink>
                                 <NavLink v-if="$page.props.auth.user.role === 'admin'" :href="route('users.index')"
                                          :active="route().current('users.index')">
-                                    Сотрудники
+                                    {{ t('main.staff') }}
                                 </NavLink>
                             </div>
+                        </div>
+
+                        <div class="flex flex-row gap-4">
+                            <button v-for="(lang, key) in languages" @click="changeLanguage(key)"
+                                    class="text-center content-center">
+                                <span
+                                    :class="{'bg-blue-500 p-2 text-white': currentLanguage === key, 'hover:bg-blue-400 p-2 hover:text-white': currentLanguage !== key}">{{
+                                        lang
+                                    }}</span>
+                            </button>
                         </div>
 
                         <div class="hidden sm:flex sm:items-center sm:ms-6">
@@ -84,7 +105,9 @@ const logout = () => {
                                     </template>
                                 </Dropdown>
                             </div>
+                            <div>
 
+                            </div>
                             <!-- Settings Dropdown -->
                             <div class="ms-3 relative">
                                 <Dropdown align="right" width="48">
@@ -114,24 +137,19 @@ const logout = () => {
                                     <template #content>
                                         <!-- Account Management -->
                                         <div class="block px-4 py-2 text-xs text-gray-400">
-                                            Manage Account
+                                            {{ t('main.manageAccount') }}
                                         </div>
 
-                                        <DropdownLink :href="route('profile.show')">
-                                            Profile
-                                        </DropdownLink>
-
-                                        <DropdownLink v-if="$page.props.jetstream.hasApiFeatures"
-                                                      :href="route('api-tokens.index')">
-                                            API Tokens
-                                        </DropdownLink>
+<!--                                        <DropdownLink :href="route('profile.show')">-->
+                                        <!--                                            {{ t('main.profile') }}-->
+                                        <!--                                        </DropdownLink>-->
 
                                         <div class="border-t border-gray-200"/>
 
                                         <!-- Authentication -->
                                         <form @submit.prevent="logout">
                                             <DropdownLink as="button">
-                                                Log Out
+                                                {{ t('main.logout') }}
                                             </DropdownLink>
                                         </form>
                                     </template>
@@ -175,15 +193,15 @@ const logout = () => {
                      class="sm:hidden">
                     <div class="pt-2 pb-3 space-y-1">
                         <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">
-                            Тайм-трекинг
+                            {{ t('main.tracking') }}
                         </ResponsiveNavLink>
                         <ResponsiveNavLink v-if="$page.props.auth.user.role === 'admin'" :href="route('reports.index')"
                                            :active="route().current('reports.index')">
-                            Отчеты
+                            {{ t('main.reports') }}
                         </ResponsiveNavLink>
                         <ResponsiveNavLink v-if="$page.props.auth.user.role === 'admin'" :href="route('users.index')"
                                            :active="route().current('users.index')">
-                            Сотрудники
+                            {{ t('main.staff') }}
                         </ResponsiveNavLink>
                     </div>
 
@@ -206,20 +224,14 @@ const logout = () => {
                         </div>
 
                         <div class="mt-3 space-y-1">
-                            <ResponsiveNavLink :href="route('profile.show')" :active="route().current('profile.show')">
-                                Profile
-                            </ResponsiveNavLink>
-
-                            <ResponsiveNavLink v-if="$page.props.jetstream.hasApiFeatures"
-                                               :href="route('api-tokens.index')"
-                                               :active="route().current('api-tokens.index')">
-                                API Tokens
-                            </ResponsiveNavLink>
+<!--                            <ResponsiveNavLink :href="route('profile.show')" :active="route().current('profile.show')">-->
+<!--                                {{ t('main.profile') }}-->
+<!--                            </ResponsiveNavLink>-->
 
                             <!-- Authentication -->
                             <form method="POST" @submit.prevent="logout">
                                 <ResponsiveNavLink as="button">
-                                    Log Out
+                                    {{ t('main.logout') }}
                                 </ResponsiveNavLink>
                             </form>
 
@@ -228,29 +240,12 @@ const logout = () => {
                                 <div class="border-t border-gray-200"/>
 
                                 <div class="block px-4 py-2 text-xs text-gray-400">
-                                    Manage Team
+                                    {{ t('main.manageAccount') }}
                                 </div>
-
-                                <!-- Team Settings -->
-                                <ResponsiveNavLink :href="route('teams.show', $page.props.auth.user.current_team)"
-                                                   :active="route().current('teams.show')">
-                                    Team Settings
-                                </ResponsiveNavLink>
-
-                                <ResponsiveNavLink v-if="$page.props.jetstream.canCreateTeams"
-                                                   :href="route('teams.create')"
-                                                   :active="route().current('teams.create')">
-                                    Create New Team
-                                </ResponsiveNavLink>
 
                                 <!-- Team Switcher -->
                                 <template v-if="$page.props.auth.user.all_teams.length > 1">
                                     <div class="border-t border-gray-200"/>
-
-                                    <div class="block px-4 py-2 text-xs text-gray-400">
-                                        Switch Teams
-                                    </div>
-
                                     <template v-for="team in $page.props.auth.user.all_teams" :key="team.id">
                                         <form @submit.prevent="switchToTeam(team)">
                                             <ResponsiveNavLink as="button">

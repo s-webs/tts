@@ -45,7 +45,7 @@ class WorkDayController extends Controller
             ->first();
 
         if ($activeWorkDay) {
-            return response()->json(['message' => 'Вы уже начали рабочий день сегодня.'], 400);
+            return response()->json(['message' => 'alreadyStartedToday'], 400);
         }
 
         $newWorkDay = WorkDay::create([
@@ -56,7 +56,7 @@ class WorkDayController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Рабочий день начат.',
+            'message' => 'workingDayStarted',
             'workDay' => $newWorkDay,
         ]);
     }
@@ -78,13 +78,13 @@ class WorkDayController extends Controller
         $activeWorkDay = $user->workDays()->whereNull('end_time')->first();
 
         if (!$activeWorkDay) {
-            return response()->json(['message' => 'Вы не начали рабочий день.'], 400);
+            return response()->json(['message' => 'dontStartedWorkingDay'], 400);
         }
 
         $activePause = $activeWorkDay->pauses()->whereNull('end_time')->first();
 
         if ($activePause) {
-            return response()->json(['message' => 'Закончите текущий перерыв перед завершением рабочего дня.'], 400);
+            return response()->json(['message' => 'finishCurrentBreakBefore'], 400);
         }
 
         $activeWorkDay->update([
@@ -93,7 +93,7 @@ class WorkDayController extends Controller
             'longitude_end' => $request->longitude,
         ]);
 
-        return response()->json(['message' => 'Рабочий день завершен.', 'workDay' => $activeWorkDay]);
+        return response()->json(['message' => 'workingDayOver', 'workDay' => $activeWorkDay]);
     }
 
 
@@ -112,13 +112,13 @@ class WorkDayController extends Controller
         $activeWorkDay = $user->workDays()->whereNull('end_time')->first();
 
         if (!$activeWorkDay) {
-            return response()->json(['message' => 'Вы не начали рабочий день.'], 400);
+            return response()->json(['message' => 'dontStartedWorkingDay'], 400);
         }
 
         $activePause = $activeWorkDay->pauses()->whereNull('end_time')->first();
 
         if ($activePause) {
-            return response()->json(['message' => 'Вы уже находитесь на перерыве.'], 400);
+            return response()->json(['message' => 'youAlreadyOnBreak'], 400);
         }
 
         $pause = Pause::create([
@@ -128,7 +128,7 @@ class WorkDayController extends Controller
             'longitude_start' => $request->longitude,
         ]);
 
-        return response()->json(['message' => 'Перерыв начат.', 'pause' => $pause]);
+        return response()->json(['message' => 'breakStarted', 'pause' => $pause]);
     }
 
 
@@ -147,13 +147,13 @@ class WorkDayController extends Controller
         $activeWorkDay = $user->workDays()->whereNull('end_time')->first();
 
         if (!$activeWorkDay) {
-            return response()->json(['message' => 'Вы не начали рабочий день.'], 400);
+            return response()->json(['message' => 'dontStartedWorkingDay'], 400);
         }
 
         $activePause = $activeWorkDay->pauses()->whereNull('end_time')->first();
 
         if (!$activePause) {
-            return response()->json(['message' => 'Вы не находитесь на перерыве.'], 400);
+            return response()->json(['message' => 'youNotBreak'], 400);
         }
 
         $activePause->update([
@@ -162,7 +162,7 @@ class WorkDayController extends Controller
             'longitude_end' => $request->longitude,
         ]);
 
-        return response()->json(['message' => 'Перерыв завершен.', 'pause' => $activePause]);
+        return response()->json(['message' => 'breakIsOver', 'pause' => $activePause]);
     }
 
 
@@ -179,7 +179,7 @@ class WorkDayController extends Controller
 
         if (!$workDay) {
             return response()->json([
-                'message' => 'Нет данных за текущий день.',
+                'message' => 'thereNotDataCurrentDay',
                 'actions' => []
             ]);
         }
@@ -189,19 +189,19 @@ class WorkDayController extends Controller
 
         // Добавляем начало рабочего дня
         $actions[] = [
-            'type' => 'Начало рабочего дня',
+            'type' => 'theBeginningWorkingDay',
             'time' => $workDay->start_time,
         ];
 
         // Добавляем перерывы с их продолжительностью
         foreach ($workDay->pauses as $pause) {
             $actions[] = [
-                'type' => 'Начало перерыва',
+                'type' => 'theBeginningBreak',
                 'time' => $pause->start_time,
             ];
             if ($pause->end_time) {
                 $actions[] = [
-                    'type' => 'Конец перерыва',
+                    'type' => 'endOfBreak',
                     'time' => $pause->end_time,
                     'duration' => gmdate('H:i:s', $pause->start_time->diffInSeconds($pause->end_time)), // Возвращаем отформатированное время
                 ];
@@ -211,7 +211,7 @@ class WorkDayController extends Controller
         // Добавляем окончание рабочего дня
         if ($workDay->end_time) {
             $actions[] = [
-                'type' => 'Окончание рабочего дня',
+                'type' => 'endOfWorkingDay',
                 'time' => $workDay->end_time,
             ];
         }
@@ -220,7 +220,7 @@ class WorkDayController extends Controller
         usort($actions, fn($a, $b) => strtotime($a['time']) <=> strtotime($b['time']));
 
         return response()->json([
-            'message' => 'Сводка за день.',
+            'message' => 'daySummary',
             'actions' => $actions,
         ]);
     }

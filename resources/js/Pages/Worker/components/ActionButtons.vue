@@ -1,4 +1,9 @@
 <script setup>
+
+import {useI18n} from "vue-i18n";
+
+const {t, locale} = useI18n();
+
 const props = defineProps({
     currentWorkDay: Object,
     currentPause: Object,
@@ -13,7 +18,7 @@ const emits = defineEmits(['onStartWork', 'onStartPause', 'onEndPause', 'onEndWo
         @click="$emit('onStartWork')"
         class="bg-green-500 hover:bg-green-700 px-2 py-1 rounded mt-4 lg:mt-0"
     >
-        Начать рабочий день
+        {{ t('main.startWork') }}
     </button>
 <!--    <button-->
 <!--        v-else-if="currentWorkDay.end_time === null && !currentPause"-->
@@ -34,7 +39,7 @@ const emits = defineEmits(['onStartWork', 'onStartPause', 'onEndPause', 'onEndWo
         @click="$emit('onEndWork')"
         class="bg-red-500 hover:bg-red-700 text-white px-2 py-1 rounded mt-4 lg:mt-0"
     >
-        Закончить рабочий день
+        {{ t('main.endTheWorkingDay') }}
     </button>
 </template>
 
