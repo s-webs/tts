@@ -16,29 +16,36 @@ class UserSeeder extends Seeder
     {
         $users = [
             [
+                'name' => 'Nikita V',
+                'role' => 'admin',
+                'position' => 'Разработчик',
+                'email' => 'swebs.sh@gmail.com',
+                'password' => Hash::make('N280902#B$'), // Пароль: F7g$9LpX
+            ],
+            [
                 'name' => 'Оспанова Магрипа Мырзалиевна',
-                'role' => 'worker',
+                'role' => 'admin',
                 'position' => 'Директор',
                 'email' => 'magripa.ospanova14@mail.ru',
                 'password' => Hash::make('F7g$9LpX'), // Пароль: F7g$9LpX
             ],
             [
                 'name' => 'Абенов Жумабек Куантаевич',
-                'role' => 'worker',
+                'role' => 'admin',
                 'position' => 'Бас дәрігер',
                 'email' => 'abenov.010@mail.ru',
                 'password' => Hash::make('Qm5@8Vtr'), // Пароль: Qm5@8Vtr
             ],
             [
                 'name' => 'Байдуллаев Тимур Батырович',
-                'role' => 'worker',
+                'role' => 'admin',
                 'position' => 'Бас дәр-дің емдеу ісі б-ша орынб.',
                 'email' => 'timavscancer@mail.ru',
                 'password' => Hash::make('Nt6*4Kpo'), // Пароль: Nt6*4Kpo
             ],
             [
                 'name' => 'Төленды Жандос Болатұлы',
-                'role' => 'worker',
+                'role' => 'admin',
                 'position' => 'Бас дәр-дің ұйымд-ру ісі б-ша орынб.',
                 'email' => 'Tolendy.Zhandos@mail.ru',
                 'password' => Hash::make('Xp8&5Lto'), // Пароль: Xp8&5Lto
