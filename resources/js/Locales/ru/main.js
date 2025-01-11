@@ -61,6 +61,9 @@ export default {
     workingHours: 'Рабочее время',
     reportsSelectedNotFound: 'Отчеты за выбранный диапазон дат не найдены.',
 
+    breaks: 'Перерывы',
+    duration: 'Продолжительность',
+    workDay: 'Рабочий день',
 
 
 }

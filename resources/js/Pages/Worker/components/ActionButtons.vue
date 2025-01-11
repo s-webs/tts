@@ -20,20 +20,20 @@ const emits = defineEmits(['onStartWork', 'onStartPause', 'onEndPause', 'onEndWo
     >
         {{ t('main.startWork') }}
     </button>
-<!--    <button-->
-<!--        v-else-if="currentWorkDay.end_time === null && !currentPause"-->
-<!--        @click="$emit('onStartPause')"-->
-<!--        class="bg-yellow-500 text-white px-4 py-2 rounded mr-2"-->
-<!--    >-->
-<!--        Начать перерыв-->
-<!--    </button>-->
-<!--    <button-->
-<!--        v-else-if="currentPause"-->
-<!--        @click="$emit('onEndPause')"-->
-<!--        class="bg-blue-500 text-white px-4 py-2 rounded mr-2"-->
-<!--    >-->
-<!--        Закончить перерыв-->
-<!--    </button>-->
+    <button
+        v-else-if="currentWorkDay.end_time === null && !currentPause"
+        @click="$emit('onStartPause')"
+        class="bg-yellow-500 text-white px-4 py-2 rounded mr-2"
+    >
+        Начать перерыв
+    </button>
+    <button
+        v-else-if="currentPause"
+        @click="$emit('onEndPause')"
+        class="bg-blue-500 text-white px-4 py-2 rounded mr-2"
+    >
+        Закончить перерыв
+    </button>
     <button
         v-if="currentWorkDay && !currentPause && !currentWorkDay.end_time"
         @click="$emit('onEndWork')"

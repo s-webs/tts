@@ -15,15 +15,71 @@ class AdminController extends Controller
     {
         $today = Carbon::today();
 
-        $usersToday = User::with('workDayToday')->get();
+        // Загружаем пользователей с рабочими днями и их паузами
+        $usersToday = User::with(['workDayToday.pauses'])->get();
 
-        // Получаем записи workDays за сегодня с привязанным пользователем
-        $todayReports = WorkDay::with('user')
-            ->whereDate('start_time', $today)
-            ->get();
+        // Преобразуем данные для удобного отображения
+        $data = $usersToday->map(function ($user) {
+            $workDay = $user->workDayToday;
 
-        return Inertia::render('Admin/Reports/Index', compact('usersToday'));
+            $workDayDuration = null;
+            $totalPauseDuration = null;
+            $netWorkDayDuration = null;
+            $completedPauses = collect(); // Объявляем пустую коллекцию по умолчанию
+
+            if ($workDay && $workDay->end_time) {
+                // Рассчитываем продолжительность рабочего дня
+                $workDayDuration = $workDay->start_time->diffInSeconds($workDay->end_time);
+
+                // Рассчитываем продолжительность завершенных пауз
+                $completedPauses = $workDay->pauses->filter(function ($pause) {
+                    return $pause->end_time !== null;
+                });
+
+                $totalPauseDuration = $completedPauses->reduce(function ($carry, $pause) {
+                    return $carry + $pause->start_time->diffInSeconds($pause->end_time);
+                }, 0);
+
+                // Рассчитываем чистую продолжительность рабочего дня (с учетом пауз)
+                $netWorkDayDuration = gmdate("H:i:s", $workDayDuration - $totalPauseDuration);
+            }
+
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'workDay' => $user->workDayToday ? [
+                    'start_time' => $user->workDayToday->start_time,
+                    'end_time' => $user->workDayToday->end_time,
+                    'latitude_start' => $user->workDayToday->latitude_start,
+                    'longitude_start' => $user->workDayToday->longitude_start,
+                    'latitude_end' => $user->workDayToday->latitude_end,
+                    'longitude_end' => $user->workDayToday->longitude_end,
+                    'duration_workday' => $netWorkDayDuration,
+                    'pauses' => $user->workDayToday->pauses->map(function ($pause) {
+                        return [
+                            'start_time' => $pause->start_time,
+                            'end_time' => $pause->end_time,
+                            'latitude_start' => $pause->latitude_start,
+                            'longitude_start' => $pause->longitude_start,
+                            'latitude_end' => $pause->latitude_end,
+                            'longitude_end' => $pause->longitude_end,
+                            'duration' => gmdate('H:i:s', $pause->start_time->diffInSeconds($pause->end_time)),
+                        ];
+                    }),
+                    'duration_pauses' => gmdate('H:i:s', $totalPauseDuration),
+                ] : null,
+            ];
+        });
+
+
+
+        // Передаем данные в Vue-компонент
+        return Inertia::render('Admin/Reports/Index', [
+            'usersToday' => $data,
+        ]);
     }
+
 
     public function getReports(Request $request)
     {
@@ -50,6 +106,29 @@ class AdminController extends Controller
                         ->whereDate('start_time', $date)
                         ->first();
 
+                    $completedPauses = collect(); // Инициализация как пустая коллекция
+                    $workDayDuration = null;
+                    $totalPauseDuration = null;
+                    $netWorkDayDuration = null;
+
+                    if ($workDay && $workDay->end_time) {
+                        // Рассчитываем продолжительность рабочего дня
+                        $workDayDuration = $workDay->start_time->diffInSeconds($workDay->end_time);
+
+                        // Фильтруем завершенные паузы
+                        $completedPauses = $workDay->pauses->filter(function ($pause) {
+                            return $pause->end_time !== null;
+                        });
+
+                        // Рассчитываем общую продолжительность пауз
+                        $totalPauseDuration = $completedPauses->reduce(function ($carry, $pause) {
+                            return $carry + $pause->start_time->diffInSeconds($pause->end_time);
+                        }, 0);
+
+                        // Рассчитываем чистую продолжительность рабочего дня
+                        $netWorkDayDuration = gmdate("H:i:s", $workDayDuration - $totalPauseDuration);
+                    }
+
                     return [
                         'name' => $user->name,
                         'work_day_today' => $workDay ? [
@@ -59,6 +138,19 @@ class AdminController extends Controller
                             'latitude_start' => $workDay->latitude_start,
                             'longitude_end' => $workDay->longitude_end,
                             'latitude_end' => $workDay->latitude_end,
+                            'duration_workday' => isset($netWorkDayDuration) ? $netWorkDayDuration : '-',
+                            'duration_pauses' => isset($totalPauseDuration) ? gmdate('H:i:s', $totalPauseDuration) : '-',
+                            'pauses' => $completedPauses->map(function ($pause) {
+                                return [
+                                    'start_time' => $pause->start_time,
+                                    'end_time' => $pause->end_time,
+                                    'latitude_start' => $pause->latitude_start,
+                                    'longitude_start' => $pause->longitude_start,
+                                    'latitude_end' => $pause->latitude_end,
+                                    'longitude_end' => $pause->longitude_end,
+                                    'duration' => gmdate('H:i:s', $pause->start_time->diffInSeconds($pause->end_time)),
+                                ];
+                            }),
                         ] : null,
                     ];
                 }),
@@ -68,6 +160,8 @@ class AdminController extends Controller
 
         return response()->json($reports);
     }
+
+
 
     public function getEmployeeReport(Request $request)
     {
@@ -96,18 +190,51 @@ class AdminController extends Controller
             if ($workDay) {
                 $startTime = $workDay->start_time;
                 $endTime = $workDay->end_time;
-                $duration = $startTime && $endTime ? $startTime->diff($endTime) : null;
+                $workDayDuration = null;
+                $totalPauseDuration = null;
+                $netWorkDayDuration = null;
+
+                // Рассчитываем продолжительность рабочего дня
+                if ($startTime && $endTime) {
+                    $workDayDuration = $startTime->diffInSeconds($endTime);
+
+                    // Фильтруем завершенные паузы
+                    $completedPauses = $workDay->pauses->filter(function ($pause) {
+                        return $pause->end_time !== null;
+                    });
+
+                    // Рассчитываем общую продолжительность пауз
+                    $totalPauseDuration = $completedPauses->reduce(function ($carry, $pause) {
+                        return $carry + $pause->start_time->diffInSeconds($pause->end_time);
+                    }, 0);
+
+                    // Рассчитываем чистую продолжительность рабочего дня
+                    $netWorkDayDuration = $workDayDuration - $totalPauseDuration;
+                }
 
                 return [
                     'date' => $date->toDateString(),
                     'name' => $employee->name,
                     'start_time' => $startTime,
                     'end_time' => $endTime,
-                    'work_duration' => $duration ? $duration->format('%H:%I:%S') : '-',
+                    'work_duration' => $workDayDuration ? gmdate("H:i:s", $workDayDuration) : '-',
+                    'duration_pauses' => $totalPauseDuration ? gmdate("H:i:s", $totalPauseDuration) : '-',
+                    'duration_workDay' => $netWorkDayDuration ? gmdate("H:i:s", $netWorkDayDuration) : '-',
                     'latitude_start' => $workDay->latitude_start,
                     'longitude_start' => $workDay->longitude_start,
                     'latitude_end' => $workDay->latitude_end,
                     'longitude_end' => $workDay->longitude_end,
+                    'pauses' => $completedPauses->map(function ($pause) {
+                        return [
+                            'start_time' => $pause->start_time,
+                            'end_time' => $pause->end_time,
+                            'latitude_start' => $pause->latitude_start,
+                            'longitude_start' => $pause->longitude_start,
+                            'latitude_end' => $pause->latitude_end,
+                            'longitude_end' => $pause->longitude_end,
+                            'duration' => gmdate("H:i:s", $pause->start_time->diffInSeconds($pause->end_time)),
+                        ];
+                    }),
                 ];
             }
 
@@ -118,15 +245,19 @@ class AdminController extends Controller
                 'start_time' => null,
                 'end_time' => null,
                 'work_duration' => '-',
+                'pause_duration' => '-',
+                'net_work_duration' => '-',
                 'latitude_start' => null,
                 'longitude_start' => null,
                 'latitude_end' => null,
                 'longitude_end' => null,
+                'pauses' => [],
             ];
         });
 
         return response()->json($report);
     }
+
 
 
     public function getAllUsers()

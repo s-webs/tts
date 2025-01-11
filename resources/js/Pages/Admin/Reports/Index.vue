@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from "@/Layouts/AppLayout.vue";
 import {ref} from "vue";
-import {formatTimestamp, formatDate, formatDuration} from '../../../Pages/Worker/utils.js';
+import {formatTimestamp, formatTime, generateMapLink} from '../../../Pages/Worker/utils.js';
 import html2pdf from 'html2pdf.js';
 import {useI18n} from "vue-i18n";
 
@@ -215,7 +215,9 @@ fetchUsers();
                                     <th class="border-r border-black pb-2">№</th>
                                     <th class="border-r border-black pb-2">{{ t('main.employee') }}</th>
                                     <th class="border-r border-black pb-2">{{ t('main.theBeginningWorkingDay') }}</th>
-                                    <th class="pb-1">{{ t('main.endOfWorkingDay') }}</th>
+                                    <th class="border-r border-black pb-2">{{ t('main.breaks') }}</th>
+                                    <th class="border-r border-black pb-2">{{ t('main.endOfWorkingDay') }}</th>
+                                    <th class="pb-1">{{ t('main.duration') }}</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -224,34 +226,65 @@ fetchUsers();
                                     :key="report.id"
                                     class="border border-black">
                                     <th class="border-r border-black pb-2">{{ index + 1 }}</th>
-                                    <td class="border-r border-black pb-2 pl-2">{{ report.name }}</td>
+                                    <td class="border-r border-black pb-2 px-2 w-10">{{ report.name }}</td>
+                                    <td class="border-r border-black pb-2 text-center">
+                                        <p>
+
+                                            <span
+                                                class="mr-2">{{
+                                                    report.workDay ? formatTimestamp(report.workDay.start_time) : '-'
+                                                }}</span>
+                                            <a
+                                                v-if="!isPdf && report.workDay && report.workDay.longitude_start && report.workDay.latitude_start"
+                                                :href="generateMapLink(report.workDay.longitude_start, report.workDay.latitude_start)"
+                                                target="_blank"
+                                                class="bg-blue-500 text-white px-2 py-1 rounded-md text-xs"
+                                            >
+                                                {{ t('main.location') }}
+                                            </a>
+                                        </p>
+                                    </td>
+                                    <td class="border-r border-black pb-2 text-center w-40">
+                                        <p v-if="report.workDay && report.workDay.pauses"
+                                           v-for="(pause, index) in report.workDay.pauses">
+                                            <a class="text-blue-600"
+                                               :href="generateMapLink(pause.longitude_start, pause.latitude_start)"
+                                               target="_blank">{{ formatTime(pause.start_time) }}</a> - <a
+                                            class="text-blue-600"
+                                            :href="generateMapLink(pause.longitude_end, pause.latitude_end)"
+                                            target="_blank">{{ formatTime(pause.end_time) }}</a>
+                                        </p>
+                                        <p v-else>-</p>
+
+                                    </td>
                                     <td class="border-r border-black pb-2 text-center">
                                         <span
                                             class="mr-2">{{
-                                                report.work_day_today ? formatTimestamp(report.work_day_today.start_time) : '-'
+                                                report.workDay && report.workDay.end_time ? formatTimestamp(report.workDay.end_time) : '-'
                                             }}</span>
                                         <a
-                                            v-if="!isPdf && report.work_day_today && report.work_day_today.longitude_start && report.work_day_today.latitude_start"
-                                            :href="'https://yandex.ru/maps/?pt=' + report.work_day_today.longitude_start + ',' + report.work_day_today.latitude_start + '&z=18&l=map'"
+                                            v-if="!isPdf && report.workDay && report.workDay.longitude_end && report.workDay.latitude_end"
+                                            :href="generateMapLink(report.workDay.longitude_end, report.workDay.latitude_end)"
                                             target="_blank"
                                             class="bg-blue-500 text-white px-2 py-1 rounded-md text-xs"
                                         >
                                             {{ t('main.location') }}
                                         </a>
                                     </td>
-                                    <td class="text-center pb-2">
-                                        <span
-                                            class="mr-2">{{
-                                                report.work_day_today ? formatTimestamp(report.work_day_today.end_time) : '-'
-                                            }}</span>
-                                        <a
-                                            v-if="!isPdf && report.work_day_today && report.work_day_today.longitude_end && report.work_day_today.latitude_end"
-                                            :href="'https://yandex.ru/maps/?pt=' + report.work_day_today.longitude_end + ',' + report.work_day_today.latitude_end + '&z=18&l=map'"
-                                            target="_blank"
-                                            class="bg-blue-500 text-white px-2 py-1 rounded-md text-xs"
-                                        >
-                                            {{ t('main.location') }}
-                                        </a>
+                                    <td class="px-2 pb-2 w-48">
+                                        <p class="flex justify-between items-center">
+                                            <span>{{ t('main.breaks') }}:</span>
+                                            <span class="text-red-700 font-bold">{{
+                                                    report.workDay && report.workDay.duration_pauses ? report.workDay.duration_pauses : '-'
+                                                }}
+                                            </span>
+                                        </p>
+                                        <p class="flex justify-between items-center">
+                                            <span>{{ t('main.workDay') }}:</span>
+                                            <span class="text-red-700 font-bold">{{
+                                                    report.workDay && report.workDay.duration_workday ? report.workDay.duration_workday : '-'
+                                                }}</span>
+                                        </p>
                                     </td>
                                 </tr>
                                 </tbody>
@@ -312,11 +345,11 @@ fetchUsers();
                                     <tr class="border border-black text-center">
                                         <th class="border-r border-black pb-2">№</th>
                                         <th class="border-r border-black pb-2">{{ t('main.employee') }}</th>
-                                        <th class="border-r border-black pb-2">{{
-                                                t('main.theBeginningWorkingDay')
-                                            }}
+                                        <th class="border-r border-black pb-2">{{ t('main.theBeginningWorkingDay') }}
                                         </th>
-                                        <th class="pb-2">{{ t('main.endOfWorkingDay') }}</th>
+                                        <th class="border-r border-black pb-2">{{ t('main.breaks') }}</th>
+                                        <th class="border-r border-black pb-2">{{ t('main.endOfWorkingDay') }}</th>
+                                        <th class="pb-2">{{ t('main.duration') }}</th>
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -334,26 +367,52 @@ fetchUsers();
                                                 }}</span>
                                             <a
                                                 v-if="!isPdf && user.work_day_today && user.work_day_today.longitude_start && user.work_day_today.latitude_start"
-                                                :href="'https://yandex.ru/maps/?pt=' + user.work_day_today.longitude_start + ',' + user.work_day_today.latitude_start + '&z=18&l=map'"
+                                                :href="generateMapLink(user.work_day_today.longitude_start, user.work_day_today.latitude_start)"
                                                 target="_blank"
                                                 class="bg-blue-500 text-white px-2 py-1 rounded-md text-xs"
                                             >
                                                 {{ t('main.location') }}
                                             </a>
                                         </td>
-                                        <td class="pb-2 text-center">
+                                        <td class="border-r border-black pb-2 text-center w-40">
+                                            <p v-if="user.work_day_today && user.work_day_today.pauses"
+                                               v-for="(pause, index) in user.work_day_today.pauses">
+                                                <a class="text-blue-600"
+                                                   :href="generateMapLink(pause.longitude_start, pause.latitude_start)"
+                                                   target="_blank">{{ formatTime(pause.start_time) }}</a> - <a
+                                                class="text-blue-600"
+                                                :href="generateMapLink(pause.longitude_end, pause.latitude_end)"
+                                                target="_blank">{{ formatTime(pause.end_time) }}</a>
+                                            </p>
+                                            <p v-else>-</p>
+                                        </td>
+                                        <td class="border-r border-black pb-2 text-center">
                                             <span
                                                 class="mr-2">{{
                                                     user.work_day_today ? formatTimestamp(user.work_day_today.end_time) : '-'
                                                 }}</span>
                                             <a
                                                 v-if="!isPdf && user.work_day_today && user.work_day_today.longitude_end && user.work_day_today.latitude_end"
-                                                :href="'https://yandex.ru/maps/?pt=' + user.work_day_today.longitude_end + ',' + user.work_day_today.latitude_end + '&z=18&l=map'"
+                                                :href="generateMapLink(user.work_day_today.longitude_end, user.work_day_today.latitude_end)"
                                                 target="_blank"
                                                 class="bg-blue-500 text-white px-2 py-1 rounded-md text-xs"
                                             >
                                                 {{ t('main.location') }}
                                             </a>
+                                        </td>
+                                        <td class="px-2 pb-2 w-48">
+                                            <p class="flex justify-between items-center">
+                                                <span>{{ t('main.breaks') }}:</span>
+                                                <span class="text-red-700 font-bold">
+                                                    {{ user.work_day_today && user.work_day_today.duration_pauses ? user.work_day_today.duration_pauses : '-' }}
+                                                </span>
+                                            </p>
+                                            <p class="flex justify-between items-center">
+                                                <span>{{ t('main.workDay') }}:</span>
+                                                <span class="text-red-700 font-bold">
+                                                    {{ user.work_day_today && user.work_day_today.duration_workday ? user.work_day_today.duration_workday : '-' }}
+                                                </span>
+                                            </p>
                                         </td>
                                     </tr>
                                     </tbody>
@@ -441,8 +500,9 @@ fetchUsers();
                                     <th class="border-r border-black pb-2">{{ t('main.employee') }}</th>
                                     <th class="border-r border-black pb-2">{{ t('main.date') }}</th>
                                     <th class="border-r border-black pb-2">{{ t('main.theBeginningWorkingDay') }}</th>
+                                    <th class="border-r border-black pb-2">{{ t('main.breaks') }}</th>
                                     <th class="border-r border-black pb-2">{{ t('main.endOfWorkingDay') }}</th>
-                                    <th class="pb-2">{{ t('main.workingHours') }}</th>
+                                    <th class="pb-2">{{ t('main.duration') }}</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -460,12 +520,24 @@ fetchUsers();
                                             }}</span>
                                         <a
                                             v-if="!isPdf && day.longitude_start && day.latitude_start"
-                                            :href="'https://yandex.ru/maps/?pt=' + day.longitude_start + ',' + day.latitude_start + '&z=18&l=map'"
+                                            :href="generateMapLink(day.longitude_start, day.latitude_start)"
                                             target="_blank"
                                             class="bg-blue-500 text-white px-2 py-1 rounded-md text-xs"
                                         >
                                             {{ t('main.location') }}
                                         </a>
+                                    </td>
+                                    <td class="border-r border-black pb-2 w-40">
+                                        <p v-if="day.pauses.length > 0"
+                                           v-for="(pause, index) in day.pauses">
+                                            <a class="text-blue-600"
+                                               :href="generateMapLink(pause.longitude_start, pause.latitude_start)"
+                                               target="_blank">{{ formatTime(pause.start_time) }}</a> - <a
+                                            class="text-blue-600"
+                                            :href="generateMapLink(pause.longitude_end, pause.latitude_end)"
+                                            target="_blank">{{ formatTime(pause.end_time) }}</a>
+                                        </p>
+                                        <p v-else>-</p>
                                     </td>
                                     <td class="border-r border-black pb-2">
                                         <span
@@ -474,15 +546,27 @@ fetchUsers();
                                             }}</span>
                                         <a
                                             v-if="!isPdf && day.longitude_end && day.latitude_end"
-                                            :href="'https://yandex.ru/maps/?pt=' + day.longitude_end + ',' + day.latitude_end + '&z=18&l=map'"
+                                            :href="generateMapLink(day.longitude_end, day.latitude_end)"
                                             target="_blank"
                                             class="bg-blue-500 text-white px-2 py-1 rounded-md text-xs"
                                         >
                                             {{ t('main.location') }}
                                         </a>
                                     </td>
-                                    <td class="pb-2">
-                                        {{ day.work_duration }}
+                                    <td class="pb-2 px-2">
+                                        {{ console.log(day) }}
+                                        <p class="flex justify-between items-center">
+                                            <span>{{ t('main.breaks') }}:</span>
+                                            <span class="text-red-700 font-bold">
+                                                    {{ day.duration_pauses }}
+                                                </span>
+                                        </p>
+                                        <p class="flex justify-between items-center">
+                                            <span>{{ t('main.workDay') }}:</span>
+                                            <span class="text-red-700 font-bold">
+                                                    {{ day.duration_workDay }}
+                                                </span>
+                                        </p>
                                     </td>
                                 </tr>
                                 </tbody>

@@ -61,4 +61,8 @@ export default {
     workingHours: 'Жұмыс уақыты',
     reportsSelectedNotFound: 'Таңдалған күндер ауқымы туралы есептер табылмады.',
 
+    breaks: 'Үзілістер',
+    duration: 'Ұзақтығы',
+    workDay: 'Жұмыс күні',
+
 }

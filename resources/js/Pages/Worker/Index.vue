@@ -274,6 +274,8 @@ const fetchData = async () => {
                         :currentPause="currentPause"
                         @onStartWork="startWork"
                         @onEndWork="endWork"
+                        @onStartPause="startPause"
+                        @onEndPause="endPause"
                     />
                 </div>
             </div>
@@ -301,15 +303,18 @@ const fetchData = async () => {
                                 }}
                             </th>
                             <th class="py-2 px-4 text-left text-sm font-medium text-gray-600">{{ t('main.time') }}</th>
-                            <!--                            <th class="py-2 px-4 text-left text-sm font-medium text-gray-600">Продолжительность</th>-->
+                            <th class="py-2 px-4 text-left text-sm font-medium text-gray-600">Продолжительность</th>
                         </tr>
                         </thead>
                         <tbody>
                         <tr v-for="action in daySummary" :key="action.time" class="border-t">
                             <td class="py-2 px-4 text-sm text-gray-800">{{ t('main.' + action.type) }}</td>
                             <td class="py-2 px-4 text-sm text-gray-800">{{ formatTimestamp(action.time) }}</td>
-                            <!--                            <td class="py-2 px-4 text-sm text-gray-800" v-if="action.duration">{{action.duration}}</td>-->
-                            <!--                            <td class="py-2 px-4 text-sm text-gray-800" v-else>-</td>-->
+                            <td class="py-2 px-4 text-sm text-gray-800" v-if="action.duration">{{
+                                    action.duration
+                                }}
+                            </td>
+                            <td class="py-2 px-4 text-sm text-gray-800" v-else>-</td>
                         </tr>
                         </tbody>
                     </table>
