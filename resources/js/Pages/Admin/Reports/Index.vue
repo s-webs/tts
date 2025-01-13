@@ -275,7 +275,7 @@ fetchUsers();
                                         <p class="flex justify-between items-center">
                                             <span>{{ t('main.breaks') }}:</span>
                                             <span class="text-red-700 font-bold">{{
-                                                    report.workDay && report.workDay.duration_pauses ? report.workDay.duration_pauses : '-'
+                                                    report.workDay && report.workDay.duration_pauses && report.workDay.pauses.length > 0 ? report.workDay.duration_pauses : '-'
                                                 }}
                                             </span>
                                         </p>

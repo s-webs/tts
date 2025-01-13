@@ -25,7 +25,6 @@ class AdminController extends Controller
             $workDayDuration = null;
             $totalPauseDuration = null;
             $netWorkDayDuration = null;
-            $completedPauses = collect(); // Объявляем пустую коллекцию по умолчанию
 
             if ($workDay && $workDay->end_time) {
                 // Рассчитываем продолжительность рабочего дня
@@ -48,15 +47,19 @@ class AdminController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'workDay' => $user->workDayToday ? [
-                    'start_time' => $user->workDayToday->start_time,
-                    'end_time' => $user->workDayToday->end_time,
-                    'latitude_start' => $user->workDayToday->latitude_start,
-                    'longitude_start' => $user->workDayToday->longitude_start,
-                    'latitude_end' => $user->workDayToday->latitude_end,
-                    'longitude_end' => $user->workDayToday->longitude_end,
+                'workDay' => $workDay ? [
+                    'start_time' => $workDay->start_time,
+                    'end_time' => $workDay->end_time,
+                    'latitude_start' => $workDay->latitude_start,
+                    'longitude_start' => $workDay->longitude_start,
+                    'latitude_end' => $workDay->latitude_end,
+                    'longitude_end' => $workDay->longitude_end,
                     'duration_workday' => $netWorkDayDuration,
-                    'pauses' => $user->workDayToday->pauses->map(function ($pause) {
+                    'pauses' => $workDay->pauses->map(function ($pause) {
+                        if ($pause->end_time === null) {
+                            return null; // Возвращаем null для паузы без end_time
+                        }
+
                         return [
                             'start_time' => $pause->start_time,
                             'end_time' => $pause->end_time,
@@ -66,19 +69,18 @@ class AdminController extends Controller
                             'longitude_end' => $pause->longitude_end,
                             'duration' => gmdate('H:i:s', $pause->start_time->diffInSeconds($pause->end_time)),
                         ];
-                    }),
-                    'duration_pauses' => gmdate('H:i:s', $totalPauseDuration),
+                    })->filter(), // Убираем null из итогового массива пауз
+                    'duration_pauses' => $totalPauseDuration ? gmdate('H:i:s', $totalPauseDuration) : '-',
                 ] : null,
             ];
         });
-
-
 
         // Передаем данные в Vue-компонент
         return Inertia::render('Admin/Reports/Index', [
             'usersToday' => $data,
         ]);
     }
+
 
 
     public function getReports(Request $request)
