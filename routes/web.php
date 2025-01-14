@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -72,5 +74,4 @@ Route::middleware([
         Route::get('/api/reports/employee', [\App\Http\Controllers\AdminController::class, 'getEmployeeReport']);
         Route::get('/api/users', [\App\Http\Controllers\AdminController::class, 'getAllUsers']);
     });
-
 });

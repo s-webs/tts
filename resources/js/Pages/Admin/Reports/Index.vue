@@ -249,10 +249,14 @@ fetchUsers();
                                            v-for="(pause, index) in report.workDay.pauses">
                                             <a class="text-blue-600"
                                                :href="generateMapLink(pause.longitude_start, pause.latitude_start)"
-                                               target="_blank">{{ formatTime(pause.start_time) }}</a> - <a
-                                            class="text-blue-600"
-                                            :href="generateMapLink(pause.longitude_end, pause.latitude_end)"
-                                            target="_blank">{{ formatTime(pause.end_time) }}</a>
+                                               target="_blank">{{ formatTime(pause.start_time) }}</a>
+                                            -
+                                            <a
+                                                v-if="pause.longitude_end && pause.latitude_end"
+                                                class="text-blue-600"
+                                                :href="generateMapLink(pause.longitude_end, pause.latitude_end)"
+                                                target="_blank">{{ formatTime(pause.end_time) }}</a>
+                                            <span v-else>{{ formatTime(pause.end_time) }}</span>
                                         </p>
                                         <p v-else>-</p>
 
@@ -379,10 +383,14 @@ fetchUsers();
                                                v-for="(pause, index) in user.work_day_today.pauses">
                                                 <a class="text-blue-600"
                                                    :href="generateMapLink(pause.longitude_start, pause.latitude_start)"
-                                                   target="_blank">{{ formatTime(pause.start_time) }}</a> - <a
-                                                class="text-blue-600"
-                                                :href="generateMapLink(pause.longitude_end, pause.latitude_end)"
-                                                target="_blank">{{ formatTime(pause.end_time) }}</a>
+                                                   target="_blank">{{ formatTime(pause.start_time) }}</a>
+                                                -
+                                                <a
+                                                    v-if="pause.longitude_end && pause.latitude_end"
+                                                    class="text-blue-600"
+                                                    :href="generateMapLink(pause.longitude_end, pause.latitude_end)"
+                                                    target="_blank">{{ formatTime(pause.end_time) }}</a>
+                                                <span v-else>{{ formatTime(pause.end_time) }}</span>
                                             </p>
                                             <p v-else>-</p>
                                         </td>
@@ -404,13 +412,17 @@ fetchUsers();
                                             <p class="flex justify-between items-center">
                                                 <span>{{ t('main.breaks') }}:</span>
                                                 <span class="text-red-700 font-bold">
-                                                    {{ user.work_day_today && user.work_day_today.duration_pauses ? user.work_day_today.duration_pauses : '-' }}
+                                                    {{
+                                                        user.work_day_today && user.work_day_today.duration_pauses ? user.work_day_today.duration_pauses : '-'
+                                                    }}
                                                 </span>
                                             </p>
                                             <p class="flex justify-between items-center">
                                                 <span>{{ t('main.workDay') }}:</span>
                                                 <span class="text-red-700 font-bold">
-                                                    {{ user.work_day_today && user.work_day_today.duration_workday ? user.work_day_today.duration_workday : '-' }}
+                                                    {{
+                                                        user.work_day_today && user.work_day_today.duration_workday ? user.work_day_today.duration_workday : '-'
+                                                    }}
                                                 </span>
                                             </p>
                                         </td>
@@ -532,10 +544,14 @@ fetchUsers();
                                            v-for="(pause, index) in day.pauses">
                                             <a class="text-blue-600"
                                                :href="generateMapLink(pause.longitude_start, pause.latitude_start)"
-                                               target="_blank">{{ formatTime(pause.start_time) }}</a> - <a
-                                            class="text-blue-600"
-                                            :href="generateMapLink(pause.longitude_end, pause.latitude_end)"
-                                            target="_blank">{{ formatTime(pause.end_time) }}</a>
+                                               target="_blank">{{ formatTime(pause.start_time) }}</a>
+                                            -
+                                            <a
+                                                v-if="pause.longitude_end && pause.latitude_end"
+                                                class="text-blue-600"
+                                                :href="generateMapLink(pause.longitude_end, pause.latitude_end)"
+                                                target="_blank">{{ formatTime(pause.end_time) }}</a>
+                                            <span v-else>{{ formatTime(pause.end_time) }}</span>
                                         </p>
                                         <p v-else>-</p>
                                     </td>
