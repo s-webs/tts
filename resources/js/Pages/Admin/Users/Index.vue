@@ -138,6 +138,7 @@ const addUser = async () => {
 
             <div class="mt-4">
                 <div
+                    v-if="user.id !== 32"
                     v-for="user in filteredUsers"
                     :key="user.id"
                     class="flex flex-col lg:flex-row items-center justify-between w-full border my-2 p-4 bg-white rounded-lg shadow-[rgba(50,50,93,0.25)_0px_6px_12px_-2px,_rgba(0,0,0,0.3)_0px_3px_7px_-3px]"
