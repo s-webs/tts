@@ -189,12 +189,14 @@ class AdminController extends Controller
             // Ищем рабочий день для данной даты
             $workDay = $employee->workDays()->whereDate('start_time', $date)->first();
 
+            $completedPauses = collect(); // Инициализируем как пустую коллекцию по умолчанию
+            $workDayDuration = null;
+            $totalPauseDuration = null;
+            $netWorkDayDuration = null;
+
             if ($workDay) {
                 $startTime = $workDay->start_time;
                 $endTime = $workDay->end_time;
-                $workDayDuration = null;
-                $totalPauseDuration = null;
-                $netWorkDayDuration = null;
 
                 // Рассчитываем продолжительность рабочего дня
                 if ($startTime && $endTime) {
@@ -247,8 +249,8 @@ class AdminController extends Controller
                 'start_time' => null,
                 'end_time' => null,
                 'work_duration' => '-',
-                'pause_duration' => '-',
-                'net_work_duration' => '-',
+                'duration_pauses' => '-',
+                'duration_workDay' => '-',
                 'latitude_start' => null,
                 'longitude_start' => null,
                 'latitude_end' => null,
@@ -259,8 +261,6 @@ class AdminController extends Controller
 
         return response()->json($report);
     }
-
-
 
     public function getAllUsers()
     {
