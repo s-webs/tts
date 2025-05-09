@@ -15,8 +15,11 @@ class AdminController extends Controller
     {
         $today = Carbon::today();
 
-        // Загружаем пользователей с рабочими днями и их паузами
-        $usersToday = User::with(['workDayToday.pauses'])->get();
+        $excludedEmails = ['abenov.010@mail.ru'];
+
+        $usersToday = User::with(['workDayToday.pauses'])
+            ->whereNotIn('email', $excludedEmails)
+            ->get();
 
         // Преобразуем данные для удобного отображения
         $data = $usersToday->map(function ($user) {
@@ -82,7 +85,6 @@ class AdminController extends Controller
     }
 
 
-
     public function getReports(Request $request)
     {
         $request->validate([
@@ -93,7 +95,10 @@ class AdminController extends Controller
         $startDate = Carbon::parse($request->start_date)->startOfDay();
         $endDate = Carbon::parse($request->end_date)->endOfDay();
 
-        $users = User::all(); // Получаем всех пользователей
+        $excludedEmails = ['abenov.010@mail.ru'];
+
+        $users = User::whereNotIn('email', $excludedEmails)->get(); // Исключаем здесь
+
         $dates = [];
         for ($date = $startDate; $date->lte($endDate); $date->addDay()) {
             $dates[] = $date->copy();
@@ -162,7 +167,6 @@ class AdminController extends Controller
 
         return response()->json($reports);
     }
-
 
 
     public function getEmployeeReport(Request $request)
@@ -264,7 +268,13 @@ class AdminController extends Controller
 
     public function getAllUsers()
     {
-        $users = User::select('id', 'name', 'email')->get();
+        $excludedEmails = ['abenov.010@mail.ru'];
+
+        $users = User::select('id', 'name', 'email')
+            ->whereNotIn('email', $excludedEmails)
+            ->get();
+
         return response()->json($users);
     }
+
 }
